@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS submissions;
+DROP TABLE IF EXISTS users;
+DROP TYPE IF EXISTS language;
+DROP TYPE IF EXISTS submission_status;
