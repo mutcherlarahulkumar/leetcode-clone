@@ -4,14 +4,21 @@ import { connectToDB, closeDB } from "./db/db.js";
 import { client } from "./redis.js";
 import { authRouter } from "./routes/auth.js";
 import { submissionsRouter } from "./routes/submissions.js";
+import { notFound, errorHandler } from "./middleware/errors.js";
 
 const app = express();
 
 await connectToDB();
-app.use(express.json());
+
+// the default 100kb would reject a solution near MAX_SOLUTION_LENGTH
+app.use(express.json({ limit: "1mb" }));
 
 app.use("/auth", authRouter);
 app.use("/submissions", submissionsRouter);
+
+// order matters: unknown route first, then the catch-all error handler last
+app.use(notFound);
+app.use(errorHandler);
 
 const server = app.listen(process.env.PORT ?? 3000);
 
