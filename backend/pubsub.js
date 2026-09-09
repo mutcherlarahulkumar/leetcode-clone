@@ -1,12 +1,13 @@
 import { client } from "./index.js";
 import { DBClientConnection } from "./db/db.js";
+import { SUBMISSION_RESULT } from "./channels.js";
 
 export const worker = async () => {
   const subscriber = client.duplicate();
 
   await subscriber.connect();
 
-  await subscriber.subscribe("submissionresult", async (message) => {
+  await subscriber.subscribe(SUBMISSION_RESULT, async (message) => {
     // save the output to the db
     const { submissionID, status, output } = JSON.parse(message);
 

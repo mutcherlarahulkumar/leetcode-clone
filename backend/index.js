@@ -3,6 +3,8 @@ import { createClient } from "redis";
 import { worker } from "./pubsub.js";
 import { connectToDB, DBClientConnection } from "./db/db.js";
 import { Status } from "./status.js";
+import { Language } from "./language.js";
+import { SUBMISSION_QUEUE } from "./channels.js";
 
 const app = express();
 
@@ -30,6 +32,12 @@ app.post("/submissions", async (req, res) => {
   const solution = req.body.solution;
   const language = req.body.language;
 
+  if (!Object.hasOwn(Language, language)) {
+    return res.status(400).json({
+      body: `language must be one of: ${Object.keys(Language).join(", ")}`,
+    });
+  }
+
   // db call to save all the details
   // save all the details to db and the status of submission to be "Pending"
   let rowID;
@@ -54,7 +62,7 @@ app.post("/submissions", async (req, res) => {
     solution,
     language,
   });
-  await client.lPush("submission", redisPayload);
+  await client.lPush(SUBMISSION_QUEUE, redisPayload);
 
   count++;
 
@@ -87,6 +95,6 @@ app.get("/submissions/:id", async (req, res) => {
   }
 });
 
-app.listen(3000);
+app.listen(process.env.PORT ?? 3000);
 
 worker();
