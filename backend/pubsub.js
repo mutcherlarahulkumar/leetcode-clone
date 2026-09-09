@@ -1,5 +1,5 @@
 import { client } from "./redis.js";
-import { pool } from "./db/db.js";
+import { saveSubmissionResult } from "./repositories/submissions.js";
 import { SUBMISSION_RESULT } from "./constants/channels.js";
 
 export const worker = async () => {
@@ -12,12 +12,12 @@ export const worker = async () => {
     const { submissionID, status, output } = JSON.parse(message);
 
     try {
-      const text =
-        "UPDATE submissions SET status = $1, output = $2 WHERE id = $3 RETURNING *";
-      const values = [status, output, submissionID];
-
-      const dbRes = await pool.query(text, values);
-      console.log(dbRes.rows[0]);
+      const updated = await saveSubmissionResult({
+        id: submissionID,
+        status,
+        output,
+      });
+      console.log(updated);
     } catch (err) {
       console.error(err);
     }
