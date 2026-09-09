@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { DBClientConnection } from "../db/db.js";
+import { pool } from "../db/db.js";
 import { client } from "../redis.js";
 import { Status } from "../models/status.js";
 import { SUBMISSION_QUEUE } from "../constants/channels.js";
@@ -28,7 +28,7 @@ submissionsRouter.post(
 
     let rowID;
     try {
-      const dbRes = await DBClientConnection.query(
+      const dbRes = await pool.query(
         "INSERT INTO submissions(code, status, question_id, language, user_id) VALUES($1, $2, $3, $4, $5) RETURNING *",
         [solution, Status.pending, questionID, language, userID],
       );
@@ -63,7 +63,7 @@ submissionsRouter.get(
     try {
       // fetch user_id in the same round trip and compare here, rather than
       // spending a second query just to find out who owns the row
-      const dbRes = await DBClientConnection.query(
+      const dbRes = await pool.query(
         "SELECT id, status, output, user_id FROM submissions WHERE id = $1",
         [req.params.id],
       );

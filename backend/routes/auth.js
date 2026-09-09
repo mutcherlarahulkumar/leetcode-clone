@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { DBClientConnection } from "../db/db.js";
+import { pool } from "../db/db.js";
 import { hashPassword, verifyPassword } from "../password.js";
 import { signToken } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
@@ -11,7 +11,7 @@ authRouter.post("/register", validateBody(registerSchema), async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    const dbRes = await DBClientConnection.query(
+    const dbRes = await pool.query(
       "INSERT INTO users(name, email, password_hash) VALUES($1, $2, $3) RETURNING id, name, email",
       [name, email, await hashPassword(password)],
     );
@@ -32,7 +32,7 @@ authRouter.post("/login", validateBody(loginSchema), async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const dbRes = await DBClientConnection.query(
+    const dbRes = await pool.query(
       "SELECT id, name, email, password_hash FROM users WHERE email = $1",
       [email],
     );
