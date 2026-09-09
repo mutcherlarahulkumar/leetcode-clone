@@ -4,6 +4,7 @@ import { Status } from "./status.js";
 const client = await createClient().on("error", (err) =>
   console.log("Redis Client Error", err),
 );
+
 let count = 0;
 
 await client.connect();
@@ -11,7 +12,6 @@ await client.connect();
 async function performSomeAction() {
   while (1) {
     const currentSubmission = await client.rPop("submission");
-
     if (!currentSubmission) {
       await setTimeout(() => {
         console.log("waiting to pick the submission");
@@ -32,6 +32,7 @@ async function performSomeAction() {
     const submissionResult = {
       ...redisPayload,
       output: "some execution result",
+      // placeholder: the real status comes from the executor's exit code
       status: Status.accepted,
     };
     await client.publish("submissionresult", JSON.stringify(submissionResult));
