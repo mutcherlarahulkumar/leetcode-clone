@@ -1,4 +1,5 @@
 import { createClient } from "redis";
+import { Status } from "./status.js";
 
 const client = await createClient().on("error", (err) =>
   console.log("Redis Client Error", err),
@@ -30,7 +31,8 @@ async function performSomeAction() {
     console.log("Requests handled in this syatem", count);
     const submissionResult = {
       ...redisPayload,
-      result: "some execution result",
+      output: "some execution result",
+      status: Status.error,
     };
     await client.publish("submissionresult", JSON.stringify(submissionResult));
   }
