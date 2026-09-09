@@ -3,8 +3,12 @@ import { createClient } from "redis";
 import { worker } from "./pubsub.js";
 import { connectToDB, DBClientConnection } from "./db/db.js";
 import { Status } from "./status.js";
-import { Language } from "./language.js";
 import { SUBMISSION_QUEUE } from "./channels.js";
+import {
+  createSubmissionSchema,
+  submissionIDSchema,
+  validate,
+} from "./validation/schemas.js";
 
 const app = express();
 
@@ -29,13 +33,11 @@ app.post("/submissions", async (req, res) => {
     "fd61356c-7c66-4949-8b8e-377f57fb09b5",
   ];
   const questionID = questionIDs[0];
-  const solution = req.body.solution;
-  const language = req.body.language;
-
-  if (!Object.hasOwn(Language, language)) {
-    return res.status(400).json({
-      body: `language must be one of: ${Object.keys(Language).join(", ")}`,
-    });
+  let solution, language;
+  try {
+    ({ solution, language } = await validate(createSubmissionSchema, req.body));
+  } catch (err) {
+    return res.status(400).json({ errors: err.errors });
   }
 
   // db call to save all the details
@@ -75,7 +77,12 @@ app.post("/submissions", async (req, res) => {
 });
 
 app.get("/submissions/:id", async (req, res) => {
-  const submissionID = req.params.id;
+  let submissionID;
+  try {
+    ({ id: submissionID } = await validate(submissionIDSchema, req.params));
+  } catch (err) {
+    return res.status(400).json({ errors: err.errors });
+  }
 
   // get status from db for that particular submissionid and give it to the frontend
   try {
