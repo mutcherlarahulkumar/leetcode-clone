@@ -1,6 +1,6 @@
-import { client } from "./index.js";
+import { client } from "./redis.js";
 import { DBClientConnection } from "./db/db.js";
-import { SUBMISSION_RESULT } from "./channels.js";
+import { SUBMISSION_RESULT } from "./constants/channels.js";
 
 export const worker = async () => {
   const subscriber = client.duplicate();

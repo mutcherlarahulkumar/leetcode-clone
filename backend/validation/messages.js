@@ -1,7 +1,10 @@
-import { Language } from "../language.js";
-
-// Generous for a single solution file, small enough to keep junk out of the db.
-export const MAX_SOLUTION_LENGTH = 100_000;
+import { Language } from "../models/language.js";
+import {
+  MAX_SOLUTION_LENGTH,
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  MAX_NAME_LENGTH,
+} from "../constants/limits.js";
 
 export const messages = {
   solution: {
@@ -17,5 +20,18 @@ export const messages = {
   submissionID: {
     required: "submission id is required",
     uuid: "submission id must be a valid uuid",
+  },
+  name: {
+    required: "name is required",
+    max: `name cannot exceed ${MAX_NAME_LENGTH} characters`,
+  },
+  email: {
+    required: "email is required",
+    invalid: "email must be a valid email address",
+  },
+  password: {
+    required: "password is required",
+    min: `password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+    max: `password cannot exceed ${MAX_PASSWORD_LENGTH} characters`,
   },
 };

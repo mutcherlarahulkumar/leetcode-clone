@@ -1,6 +1,12 @@
 import * as yup from "yup";
-import { Language } from "../language.js";
-import { messages, MAX_SOLUTION_LENGTH } from "./messages.js";
+import { Language } from "../models/language.js";
+import {
+  MAX_SOLUTION_LENGTH,
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  MAX_NAME_LENGTH,
+} from "../constants/limits.js";
+import { messages } from "./messages.js";
 
 export const createSubmissionSchema = yup.object({
   // Source code: store it byte for byte. No trim, no coercion, no casing rules --
@@ -24,6 +30,35 @@ export const createSubmissionSchema = yup.object({
     .oneOf(Object.keys(Language), messages.language.oneOf)
     .required(messages.language.required),
 });
+
+// Passwords are not trimmed -- leading/trailing spaces are the user's choice.
+const password = yup
+  .string()
+  .strict(true)
+  .min(MIN_PASSWORD_LENGTH, messages.password.min)
+  .max(MAX_PASSWORD_LENGTH, messages.password.max)
+  .required(messages.password.required);
+
+// lowercased so "A@b.com" and "a@b.com" are the same account
+const email = yup
+  .string()
+  .trim()
+  .lowercase()
+  .email(messages.email.invalid)
+  .required(messages.email.required);
+
+export const registerSchema = yup.object({
+  // not strict: trim() has to transform here, strict would reject " Rahul " outright
+  name: yup
+    .string()
+    .trim()
+    .max(MAX_NAME_LENGTH, messages.name.max)
+    .required(messages.name.required),
+  email,
+  password,
+});
+
+export const loginSchema = yup.object({ email, password });
 
 export const submissionIDSchema = yup.object({
   id: yup
