@@ -27,8 +27,8 @@ export const findSubmissionByID = async (id) => {
 
 export const saveSubmissionResult = async ({ id, status, output }) => {
   const { rows } = await pool.query(
-    "UPDATE submissions SET status = $1, output = $2 WHERE id = $3 RETURNING id, status, output",
-    [status, output, id],
+    "UPDATE submissions SET status = $1, output = $2 WHERE id = $3 AND status = $4 RETURNING id, status, output",
+    [status, output, id, Status.pending],
   );
   return rows[0] ?? null;
 };
