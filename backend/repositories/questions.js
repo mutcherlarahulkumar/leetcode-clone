@@ -71,6 +71,16 @@ export const findReadyQuestionByID = async (id) => {
   return rows[0] ?? null;
 };
 
+// test_cases and solutions cascade; submissions do not, so a question with
+// submissions raises 23503 and the route turns that into a clear 409.
+export const deleteQuestion = async (id) => {
+  const { rows } = await pool.query(
+    "DELETE FROM questions WHERE id = $1 RETURNING id",
+    [id],
+  );
+  return rows[0] ?? null;
+};
+
 export const setQuestionStatus = async (id, status) => {
   const { rows } = await pool.query(
     "UPDATE questions SET status = $2 WHERE id = $1 RETURNING id, status",

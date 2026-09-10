@@ -6,9 +6,14 @@ import {
 } from "../repositories/submissions.js";
 import { findLanguageByID } from "../repositories/languages.js";
 import { findQuestionByID } from "../repositories/questions.js";
-import { listRunnableTestCases } from "../repositories/testCases.js";
+import {
+  listRunnableTestCases,
+  listSampleTestCases,
+} from "../repositories/testCases.js";
 import { QuestionStatus } from "../models/questionStatus.js";
 import { messages } from "../validation/messages.js";
+import { judgeRun } from "../judge.js";
+import { newRunId, awaitRun } from "../runRegistry.js";
 import { client } from "../redis.js";
 import { SUBMISSION_QUEUE } from "../constants/channels.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -17,6 +22,29 @@ import {
   createSubmissionSchema,
   submissionIDSchema,
 } from "../validation/schemas.js";
+
+const RUN_TIMEOUT_MS = 30_000;
+
+// shared: validate the submission body targets a ready question + enabled
+// language, returning { question, language } or sending the error itself.
+const resolveTarget = async (req, res) => {
+  const { languageID, questionID } = req.body;
+  const question = await findQuestionByID(questionID);
+  if (!question) {
+    res.status(404).json({ errors: [messages.questionID.unknown] });
+    return null;
+  }
+  if (question.status !== QuestionStatus.ready) {
+    res.status(409).json({ errors: [messages.questionID.notReady] });
+    return null;
+  }
+  const language = await findLanguageByID(languageID);
+  if (!language || !language.is_enabled) {
+    res.status(400).json({ errors: [messages.languageID.unknown] });
+    return null;
+  }
+  return { question, language };
+};
 
 export const submissionsRouter = Router();
 
@@ -43,22 +71,12 @@ submissionsRouter.post(
   "/",
   validateBody(createSubmissionSchema),
   async (req, res) => {
-    const { solution, languageID, questionID } = req.body;
+    const { solution, questionID } = req.body;
     const userID = req.user.id;
 
-    const question = await findQuestionByID(questionID);
-    if (!question) {
-      return res.status(404).json({ errors: [messages.questionID.unknown] });
-    }
-    // only a live question accepts submissions; a draft has no expected outputs
-    if (question.status !== QuestionStatus.ready) {
-      return res.status(409).json({ errors: [messages.questionID.notReady] });
-    }
-
-    const language = await findLanguageByID(languageID);
-    if (!language || !language.is_enabled) {
-      return res.status(400).json({ errors: [messages.languageID.unknown] });
-    }
+    const target = await resolveTarget(req, res);
+    if (!target) return;
+    const { language } = target;
 
     let submission;
     try {
@@ -91,6 +109,48 @@ submissionsRouter.post(
     res
       .status(202)
       .json({ submissionID: submission.id, status: submission.status });
+  },
+);
+
+// Run against the sample cases only. Nothing is saved -- the HTTP request waits
+// for the worker's result and returns per-case input/expected/actual.
+submissionsRouter.post(
+  "/run",
+  validateBody(createSubmissionSchema),
+  async (req, res) => {
+    const { solution } = req.body;
+
+    const target = await resolveTarget(req, res);
+    if (!target) return;
+    const { question, language } = target;
+
+    const samples = await listSampleTestCases(question.id);
+    const sampleById = new Map(
+      samples.map((s) => [s.id, { input: s.input, expected: s.expected_output }]),
+    );
+
+    const runId = newRunId();
+    await client.lPush(
+      SUBMISSION_QUEUE,
+      JSON.stringify({
+        kind: "run",
+        id: runId,
+        questionID: question.id,
+        language: language.slug,
+        code: solution,
+        testCases: samples.map((s) => ({ id: s.id, input: s.input })),
+      }),
+    );
+
+    try {
+      const result = await awaitRun(runId, RUN_TIMEOUT_MS);
+      if (result.error) {
+        return res.status(500).json({ errors: ["the run could not be executed"] });
+      }
+      res.status(200).json(judgeRun(result, sampleById));
+    } catch {
+      res.status(504).json({ errors: ["run timed out"] });
+    }
   },
 );
 

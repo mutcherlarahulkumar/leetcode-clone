@@ -29,26 +29,27 @@
   }
 
   .dark {
-    --background: 240 10% 8%;
-    --foreground: 0 0% 95%;
-    --card: 240 10% 11%;
-    --card-foreground: 0 0% 95%;
-    --popover: 240 10% 11%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 142 69% 48%;
-    --primary-foreground: 240 10% 4%;
-    --secondary: 240 4% 16%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 240 4% 18%;
-    --accent-foreground: 0 0% 95%;
-    --destructive: 0 63% 50%;
+    /* neutral cool-grey palette (hue 220, low saturation) */
+    --background: 220 13% 9%;
+    --foreground: 220 14% 90%;
+    --card: 220 13% 12%;
+    --card-foreground: 220 14% 90%;
+    --popover: 220 13% 12%;
+    --popover-foreground: 220 14% 90%;
+    --primary: 142 64% 45%;
+    --primary-foreground: 220 20% 6%;
+    --secondary: 220 10% 16%;
+    --secondary-foreground: 220 14% 90%;
+    --muted: 220 10% 16%;
+    --muted-foreground: 220 9% 58%;
+    --accent: 220 10% 19%;
+    --accent-foreground: 220 14% 92%;
+    --destructive: 0 62% 52%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 4% 18%;
-    --input: 240 4% 18%;
-    --ring: 142 69% 48%;
-    --success: 142 69% 50%;
+    --border: 220 9% 20%;
+    --input: 220 9% 22%;
+    --ring: 142 64% 45%;
+    --success: 142 64% 48%;
     --warning: 38 92% 55%;
   }
 }
@@ -58,6 +59,29 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  ::selection {
+    background: hsl(var(--primary) / 0.25);
+  }
+  /* quiet, theme-aware scrollbars — the app is dense with scroll regions */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border: 2px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+    background-clip: content-box;
   }
 }

@@ -5,6 +5,7 @@ import type {
   SubmissionCreated,
   SubmissionDetail,
   SubmissionSummary,
+  RunResult,
 } from "@lecode/types";
 
 export const mySubmissionsKey = (questionId?: string) =>
@@ -38,8 +39,19 @@ export const listMySubmissionsAPI = async (
   return data;
 };
 
+// Run against sample cases only; the request resolves with the results (the
+// backend waits for the worker), so this is a normal mutation.
+export const runSolutionAPI = async (
+  input: CreateSubmissionInput,
+): Promise<RunResult> => {
+  const { data } = await http.post<RunResult>("/submissions/run", input);
+  return data;
+};
+
 export const useCreateSubmission = () =>
   useMutation({ mutationFn: createSubmissionAPI });
+
+export const useRunSolution = () => useMutation({ mutationFn: runSolutionAPI });
 
 export const useMySubmissions = (questionId?: string) =>
   useQuery({

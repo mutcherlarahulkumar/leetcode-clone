@@ -19,6 +19,7 @@ import {
   listQuestions,
   findQuestionByID,
   setQuestionStatus,
+  deleteQuestion,
 } from "../repositories/questions.js";
 import {
   createTestCase,
@@ -55,11 +56,14 @@ const slugify = (title) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-// A question's content and test cases are frozen once it is ready or mid
-// generation -- editing then would desync the stored expected outputs.
-const isEditable = (status) =>
-  status === QuestionStatus.draft ||
-  status === QuestionStatus.generation_failed;
+// The admin can edit at any stage. Any edit invalidates a published question --
+// its stored expected outputs may no longer match the content -- so it drops
+// back to draft and must be generated again to go live.
+const revertToDraft = async (question) => {
+  if (question.status !== QuestionStatus.draft) {
+    await setQuestionStatus(question.id, QuestionStatus.draft);
+  }
+};
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -207,11 +211,6 @@ adminRouter.patch(
       const existing = await findQuestionByID(req.params.id);
       if (!existing)
         return res.status(404).json({ errors: ["question not found"] });
-      if (!isEditable(existing.status)) {
-        return res
-          .status(409)
-          .json({ errors: ["question can only be edited while draft"] });
-      }
       const question = await updateQuestion({
         id: req.params.id,
         title,
@@ -219,12 +218,35 @@ adminRouter.patch(
         statement,
         hints,
       });
-      res.status(200).json(question);
+      await revertToDraft(existing);
+      res.status(200).json({ ...question, status: QuestionStatus.draft });
     } catch (err) {
       if (err.code === "23505")
         return res.status(409).json({ errors: ["slug already exists"] });
       console.error(err);
       res.status(500).json({ errors: ["could not update question"] });
+    }
+  },
+);
+
+adminRouter.delete(
+  "/questions/:id",
+  validateParams(idParamSchema),
+  async (req, res) => {
+    try {
+      const deleted = await deleteQuestion(req.params.id);
+      if (!deleted)
+        return res.status(404).json({ errors: ["question not found"] });
+      res.status(204).end();
+    } catch (err) {
+      // 23503: submissions reference this question, so it cannot be removed
+      if (err.code === "23503") {
+        return res
+          .status(409)
+          .json({ errors: ["question has submissions and cannot be deleted"] });
+      }
+      console.error(err);
+      res.status(500).json({ errors: ["could not delete question"] });
     }
   },
 );
@@ -241,11 +263,6 @@ adminRouter.post(
       const question = await findQuestionByID(req.params.id);
       if (!question)
         return res.status(404).json({ errors: ["question not found"] });
-      if (!isEditable(question.status)) {
-        return res
-          .status(409)
-          .json({ errors: ["question can only be edited while draft"] });
-      }
       const counts = await countByKind(question.id);
       if (counts.sample + counts.hidden >= MAX_TEST_CASES) {
         return res
@@ -262,6 +279,7 @@ adminRouter.post(
         input,
         explanation,
       });
+      await revertToDraft(question);
       res.status(201).json(testCase);
     } catch (err) {
       console.error(err);
@@ -278,17 +296,13 @@ adminRouter.delete(
       const question = await findQuestionByID(req.params.id);
       if (!question)
         return res.status(404).json({ errors: ["question not found"] });
-      if (!isEditable(question.status)) {
-        return res
-          .status(409)
-          .json({ errors: ["question can only be edited while draft"] });
-      }
       const deleted = await deleteTestCase({
         questionID: question.id,
         id: req.params.tcId,
       });
       if (!deleted)
         return res.status(404).json({ errors: ["test case not found"] });
+      await revertToDraft(question);
       res.status(204).end();
     } catch (err) {
       console.error(err);
@@ -309,11 +323,6 @@ adminRouter.post(
       const question = await findQuestionByID(req.params.id);
       if (!question)
         return res.status(404).json({ errors: ["question not found"] });
-      if (!isEditable(question.status)) {
-        return res
-          .status(409)
-          .json({ errors: ["question can only be edited while draft"] });
-      }
 
       const language = await findLanguageByID(languageID);
       if (!language || !language.is_enabled) {
@@ -332,6 +341,7 @@ adminRouter.post(
           .status(409)
           .json({ errors: ["a reference solution already exists"] });
       }
+      await revertToDraft(question);
       res.status(201).json(solution);
     } catch (err) {
       console.error(err);
@@ -350,10 +360,10 @@ adminRouter.post(
       const question = await findQuestionByID(req.params.id);
       if (!question)
         return res.status(404).json({ errors: ["question not found"] });
-      if (!isEditable(question.status)) {
+      if (question.status === QuestionStatus.generating) {
         return res
           .status(409)
-          .json({ errors: ["question is not in a generatable state"] });
+          .json({ errors: ["generation is already running"] });
       }
 
       const reference = await findReferenceSolution(question.id);

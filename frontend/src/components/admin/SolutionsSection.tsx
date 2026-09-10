@@ -5,8 +5,9 @@ import { useLanguages } from "@lecode/api/languages";
 import { solutionSchema, type SolutionValues } from "@lecode/validations/admin";
 import { errorMessage } from "@lecode/lib/axios";
 import { type AdminSolution } from "@lecode/types";
+import { LANG_SLUG } from "@lecode/constants";
 import { StatusBadge } from "@lecode/components/common/StatusBadge";
-import { FormTextArea } from "@lecode/components/common/FormTextArea";
+import { FormEditor } from "@lecode/components/common/FormEditor";
 import { FormSelect } from "@lecode/components/common/FormSelect";
 import { Button } from "@lecode/components/ui/button";
 import { Badge } from "@lecode/components/ui/badge";
@@ -97,7 +98,15 @@ export function SolutionsSection({
                     label: `${l.name} ${l.version}`,
                   }))}
                 />
-                <FormTextArea name="code" label="Code" mono rows={10} />
+                <FormEditor
+                  name="code"
+                  label="Code"
+                  slug={
+                    LANG_SLUG[
+                      enabled.find((l) => l.id === values.languageID)?.name ?? ""
+                    ] ?? "plaintext"
+                  }
+                />
                 <ReferenceCheckbox />
                 <Button type="submit" size="sm" disabled={isSubmitting}>
                   Add solution

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { Formik, Form } from "formik";
@@ -13,8 +14,12 @@ import { Button } from "@lecode/components/ui/button";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { setSession } = useAuth();
+  const { setSession, isAuthenticated, ready } = useAuth();
   const register = useRegisterAPI();
+
+  useEffect(() => {
+    if (ready && isAuthenticated) router.replace(ROUTES.problems);
+  }, [ready, isAuthenticated, router]);
 
   return (
     <AuthCard

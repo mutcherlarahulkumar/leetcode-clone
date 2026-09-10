@@ -8,10 +8,14 @@ import { languagesRouter } from "./routes/languages.js";
 import { questionsRouter } from "./routes/questions.js";
 import { adminRouter } from "./routes/admin.js";
 import { notFound, errorHandler } from "./middleware/errors.js";
+import { cors } from "./middleware/cors.js";
 
 const app = express();
 
 await connectToDB();
+
+// CORS first, so preflight is answered before body parsing or routing
+app.use(cors);
 
 // the default 100kb would reject a solution near MAX_SOLUTION_LENGTH
 app.use(express.json({ limit: "1mb" }));

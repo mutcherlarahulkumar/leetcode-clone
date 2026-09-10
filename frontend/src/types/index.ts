@@ -116,6 +116,22 @@ export interface SubmissionCreated {
   status: SubmissionStatus;
 }
 
+// Result of a "Run" against sample cases only (nothing saved).
+export interface RunCase {
+  id: string;
+  input: string;
+  expected: string;
+  actual: string;
+  status: SubmissionStatus;
+}
+
+export interface RunResult {
+  compiled: boolean;
+  compileOutput: string;
+  cases: RunCase[];
+  totalMs: number;
+}
+
 // --- admin shapes ---
 
 export interface AdminQuestionListItem {

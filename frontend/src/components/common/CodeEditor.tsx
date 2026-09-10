@@ -1,8 +1,8 @@
-import Editor from "@monaco-editor/react";
+import Editor, { type OnMount } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 
-// Maps a language slug to a Monaco language id. Unknown slugs fall back to
-// plaintext so a newly-added language still edits, just without highlighting.
+export type MonacoEditor = Parameters<OnMount>[0];
+
 const MONACO_LANG: Record<string, string> = {
   cpp: "cpp",
   ts: "typescript",
@@ -13,26 +13,33 @@ export function CodeEditor({
   slug,
   value,
   onChange,
+  fontSize = 14,
+  onEditorMount,
 }: {
   slug: string | undefined;
   value: string;
   onChange: (value: string) => void;
+  fontSize?: number;
+  onEditorMount?: (editor: MonacoEditor) => void;
 }) {
   const { resolvedTheme } = useTheme();
   return (
     <Editor
       height="100%"
       theme={resolvedTheme === "dark" ? "vs-dark" : "light"}
-      language={slug ? (MONACO_LANG[slug] ?? "plaintext") : "plaintext"}
+      // known slugs map to a monaco id; anything else (e.g. "markdown") passes through
+      language={slug ? (MONACO_LANG[slug] ?? slug) : "plaintext"}
       value={value}
       onChange={(v) => onChange(v ?? "")}
+      onMount={(editor) => onEditorMount?.(editor)}
       options={{
         minimap: { enabled: false },
-        fontSize: 14,
+        fontSize,
         scrollBeyondLastLine: false,
         smoothScrolling: true,
         tabSize: 2,
         automaticLayout: true,
+        padding: { top: 12 },
       }}
     />
   );

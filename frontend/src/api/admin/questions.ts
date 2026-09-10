@@ -81,3 +81,13 @@ const useStatusAction = (id: string, path: string) => {
 
 export const useGenerateQuestion = (id: string) => useStatusAction(id, "generate");
 export const useUnpublishQuestion = (id: string) => useStatusAction(id, "unpublish");
+
+export const useDeleteQuestion = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await http.delete(`/admin/questions/${id}`);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminQuestionsKey }),
+  });
+};

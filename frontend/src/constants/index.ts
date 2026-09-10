@@ -82,3 +82,38 @@ export const ROUTES = {
 } as const;
 
 export const TOKEN_STORAGE_KEY = "lecode.token";
+
+// Map a language display name to a Monaco language id / slug. The public
+// languages endpoint intentionally does not expose the slug.
+export const LANG_SLUG: Record<string, string> = {
+  "C++": "cpp",
+  TypeScript: "ts",
+  Go: "go",
+};
+
+// Starter code shown in the editor when the solver has not typed anything yet,
+// keyed by slug. Reads stdin and prints stdout, matching the judge harness.
+export const BOILERPLATE: Record<string, string> = {
+  cpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    // read from stdin, write your answer to stdout
+    return 0;
+}
+`,
+  ts: `// read from stdin, write your answer to stdout
+const data = require("fs").readFileSync(0, "utf8").trim();
+
+`,
+  go: `package main
+
+import "fmt"
+
+func main() {
+    // read from stdin with fmt.Scan, print your answer
+    _ = fmt.Sprint
+}
+`,
+};
+

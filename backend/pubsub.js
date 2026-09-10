@@ -7,6 +7,7 @@ import { caseDataFor, setExpectedOutputs } from "./repositories/testCases.js";
 import { setSolutionResult } from "./repositories/solutions.js";
 import { setQuestionStatus } from "./repositories/questions.js";
 import { saveJudgment } from "./repositories/submissions.js";
+import { resolveRun } from "./runRegistry.js";
 
 // A reference-solution run: on a clean pass its outputs become the question's
 // expected outputs and the question goes ready; otherwise it cannot.
@@ -67,6 +68,12 @@ export const worker = async () => {
   await subscriber.subscribe(SUBMISSION_RESULT, async (message) => {
     try {
       const r = JSON.parse(message);
+      // a Run's result is handed to the waiting HTTP request, not the DB
+      if (r.kind === "run") {
+        if (r.error) resolveRun(r.id, { error: true });
+        else resolveRun(r.id, r);
+        return;
+      }
       if (r.error) await handleWorkerError(r);
       else if (r.kind === "generation") await handleGeneration(r);
       else await handleSubmission(r);

@@ -22,11 +22,14 @@ const NavLink = ({ href, label }: { href: string; label: string }) => {
     <Link
       href={href}
       className={cn(
-        "text-sm font-medium transition-colors hover:text-foreground",
+        "relative py-4 text-sm font-medium transition-colors hover:text-foreground",
         active ? "text-foreground" : "text-muted-foreground",
       )}
     >
       {label}
+      {active && (
+        <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-primary" />
+      )}
     </Link>
   );
 };
@@ -39,9 +42,11 @@ export function Navbar() {
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
       <div className="container flex h-14 items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link href={ROUTES.problems} className="flex items-center gap-2 font-bold">
-            <FiCode className="text-primary" />
-            <span>
+          <Link href={ROUTES.problems} className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <FiCode className="h-4 w-4" />
+            </span>
+            <span className="text-[15px] font-semibold tracking-tight">
               le<span className="text-primary">code</span>
             </span>
           </Link>

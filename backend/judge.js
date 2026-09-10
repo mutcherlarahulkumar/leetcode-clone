@@ -75,6 +75,37 @@ export const judgeSubmission = (result, caseDataById) => {
 };
 
 /**
+ * Judge a "Run" against sample cases only. Every case is a sample, so all of
+ * them expose input/expected/actual for the console.
+ * @param {{compiled:boolean, compileOutput:string, cases:{id,status,output}[], totalMs:number}} result
+ * @param {Map<string,{input:string,expected:string}>} sampleById
+ */
+export const judgeRun = (result, sampleById) => {
+  if (!result.compiled) {
+    return {
+      compiled: false,
+      compileOutput: result.compileOutput ?? "",
+      cases: [],
+      totalMs: result.totalMs,
+    };
+  }
+  const cases = result.cases.map((c) => {
+    const meta = sampleById.get(c.id) ?? { input: "", expected: "" };
+    let status;
+    if (c.status !== CASE_OK) status = failStatus(c.status);
+    else status = matches(c.output, meta.expected) ? Status.accepted : Status.wrong_answer;
+    return {
+      id: c.id,
+      input: meta.input,
+      expected: meta.expected,
+      actual: c.output,
+      status,
+    };
+  });
+  return { compiled: true, compileOutput: "", cases, totalMs: result.totalMs };
+};
+
+/**
  * Evaluate a reference solution run. If it passes cleanly its outputs become the
  * questions's expected outputs; otherwise the question cannot go ready.
  */

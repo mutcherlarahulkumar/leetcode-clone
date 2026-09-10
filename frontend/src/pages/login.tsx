@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { Formik, Form } from "formik";
@@ -13,10 +14,15 @@ import { Button } from "@lecode/components/ui/button";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setSession } = useAuth();
+  const { setSession, isAuthenticated, ready } = useAuth();
   const login = useLoginAPI();
 
   const next = typeof router.query.next === "string" ? router.query.next : ROUTES.problems;
+
+  // already logged in? there is nothing to log into -- go to the app
+  useEffect(() => {
+    if (ready && isAuthenticated) router.replace(next);
+  }, [ready, isAuthenticated, next, router]);
 
   return (
     <AuthCard
