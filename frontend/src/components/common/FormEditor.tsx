@@ -20,7 +20,7 @@ export function FormEditor({
   const showError = meta.touched && !!meta.error;
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
+      {label && <Label>{label}</Label>}
       <div
         className={cn(
           "overflow-hidden rounded-md border",

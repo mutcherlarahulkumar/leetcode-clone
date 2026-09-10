@@ -12,7 +12,7 @@ import { buildHints } from "@lecode/lib/hints";
 import { ROUTES } from "@lecode/constants";
 import { withAdminLayout } from "@lecode/lib/layouts/AdminLayout";
 import { FormField } from "@lecode/components/common/FormField";
-import { FormEditor } from "@lecode/components/common/FormEditor";
+import { MarkdownField } from "@lecode/components/common/MarkdownField";
 import { FormTextArea } from "@lecode/components/common/FormTextArea";
 import { Button } from "@lecode/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@lecode/components/ui/card";
@@ -60,10 +60,9 @@ export default function NewQuestionPage() {
                   label="Slug (optional — derived from title if empty)"
                   placeholder="two-sum"
                 />
-                <FormEditor
+                <MarkdownField
                   name="statement"
                   label="Statement (markdown — supports mermaid)"
-                  slug="markdown"
                   height={360}
                 />
                 <FormTextArea

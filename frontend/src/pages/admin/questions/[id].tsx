@@ -25,7 +25,7 @@ import { TestCasesSection } from "@lecode/components/admin/TestCasesSection";
 import { TemplatesSection } from "@lecode/components/admin/TemplatesSection";
 import { SolutionsSection } from "@lecode/components/admin/SolutionsSection";
 import { FormField } from "@lecode/components/common/FormField";
-import { FormEditor } from "@lecode/components/common/FormEditor";
+import { MarkdownField } from "@lecode/components/common/MarkdownField";
 import { FormTextArea } from "@lecode/components/common/FormTextArea";
 import { Button } from "@lecode/components/ui/button";
 import { Skeleton } from "@lecode/components/ui/skeleton";
@@ -114,7 +114,7 @@ export default function EditQuestionPage() {
                 <Form className="space-y-4">
                   <FormField name="title" label="Title" />
                   <FormField name="slug" label="Slug" />
-                  <FormEditor name="statement" label="Statement (markdown)" slug="markdown" height={360} />
+                  <MarkdownField name="statement" label="Statement (markdown)" height={360} />
                   <FormTextArea name="hintsText" label="Hints (one per line)" rows={3} />
                   <FormTextArea name="misconceptionsText" label="Misconceptions (one per line)" rows={3} />
                   <Button type="submit" disabled={isSubmitting}>
