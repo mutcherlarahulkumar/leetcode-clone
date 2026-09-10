@@ -15,6 +15,19 @@ export const createUser = async ({ name, email, passwordHash }) => {
   }
 };
 
+// Admin oversight: everyone, with how many submissions each has made.
+export const listUsers = async () => {
+  const { rows } = await pool.query(
+    `SELECT u.id, u.name, u.email, u.role,
+            count(s.id)::int AS submission_count
+       FROM users u
+       LEFT JOIN submissions s ON s.user_id = u.id
+      GROUP BY u.id
+      ORDER BY u.name`,
+  );
+  return rows;
+};
+
 export const findUserByEmail = async (email) => {
   const { rows } = await pool.query(
     "SELECT id, name, email, password_hash, role FROM users WHERE email = $1",

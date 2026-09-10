@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createSubmission,
   findSubmissionByID,
+  listSubmissionsByUser,
 } from "../repositories/submissions.js";
 import { findLanguageByID } from "../repositories/languages.js";
 import { findQuestionByID } from "../repositories/questions.js";
@@ -21,6 +22,22 @@ export const submissionsRouter = Router();
 
 // every route below belongs to the caller, so authenticate once here
 submissionsRouter.use(requireAuth);
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// the caller's own submission history, optionally scoped to one question
+submissionsRouter.get("/", async (req, res) => {
+  const questionId = req.query.questionId;
+  if (questionId !== undefined && !UUID_RE.test(questionId)) {
+    return res.status(400).json({ errors: ["questionId must be a valid uuid"] });
+  }
+  try {
+    res.status(200).json(await listSubmissionsByUser(req.user.id, questionId));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ errors: ["could not list submissions"] });
+  }
+});
 
 submissionsRouter.post(
   "/",

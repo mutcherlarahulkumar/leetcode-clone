@@ -32,6 +32,8 @@ import {
   listSolutions,
   findReferenceSolution,
 } from "../repositories/solutions.js";
+import { listUsers } from "../repositories/users.js";
+import { listAllSubmissions } from "../repositories/submissions.js";
 import {
   createLanguage,
   updateLanguage,
@@ -56,22 +58,63 @@ const slugify = (title) =>
 // A question's content and test cases are frozen once it is ready or mid
 // generation -- editing then would desync the stored expected outputs.
 const isEditable = (status) =>
-  status === QuestionStatus.draft || status === QuestionStatus.generation_failed;
+  status === QuestionStatus.draft ||
+  status === QuestionStatus.generation_failed;
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+adminRouter.get("/users", async (req, res) => {
+  try {
+    res.status(200).json(await listUsers());
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ errors: ["could not list users"] });
+  }
+});
+
+// every submission across all users, newest first; ?userId / ?questionId filter
+adminRouter.get("/submissions", async (req, res) => {
+  const { userId, questionId } = req.query;
+  for (const [k, v] of [
+    ["userId", userId],
+    ["questionId", questionId],
+  ]) {
+    if (v !== undefined && !UUID_RE.test(v)) {
+      return res.status(400).json({ errors: [`${k} must be a valid uuid`] });
+    }
+  }
+  try {
+    res
+      .status(200)
+      .json(
+        await listAllSubmissions({ userID: userId, questionID: questionId }),
+      );
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ errors: ["could not list submissions"] });
+  }
+});
 
 // --- languages ---------------------------------------------------------------
 
-adminRouter.post("/languages", validateBody(createLanguageSchema), async (req, res) => {
-  const { slug, name, version } = req.body;
-  try {
-    const lang = await createLanguage({ slug, name, version });
-    if (!lang) return res.status(409).json({ errors: ["slug already exists"] });
-    // created disabled on purpose; enable it only after the worker image exists
-    res.status(201).json(lang);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ errors: ["could not create language"] });
-  }
-});
+adminRouter.post(
+  "/languages",
+  validateBody(createLanguageSchema),
+  async (req, res) => {
+    const { slug, name, version } = req.body;
+    try {
+      const lang = await createLanguage({ slug, name, version });
+      if (!lang)
+        return res.status(409).json({ errors: ["slug already exists"] });
+      // created disabled on purpose; enable it only after the worker image exists
+      res.status(201).json(lang);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ errors: ["could not create language"] });
+    }
+  },
+);
 
 adminRouter.patch(
   "/languages/:id",
@@ -80,8 +123,14 @@ adminRouter.patch(
   async (req, res) => {
     const { name, version, isEnabled } = req.body;
     try {
-      const lang = await updateLanguage({ id: req.params.id, name, version, isEnabled });
-      if (!lang) return res.status(404).json({ errors: ["language not found"] });
+      const lang = await updateLanguage({
+        id: req.params.id,
+        name,
+        version,
+        isEnabled,
+      });
+      if (!lang)
+        return res.status(404).json({ errors: ["language not found"] });
       res.status(200).json(lang);
     } catch (err) {
       console.error(err);
@@ -92,26 +141,31 @@ adminRouter.patch(
 
 // --- questions ---------------------------------------------------------------
 
-adminRouter.post("/questions", validateBody(createQuestionSchema), async (req, res) => {
-  const { title, statement, hints } = req.body;
-  const slug = req.body.slug ?? slugify(title);
-  if (!slug) return res.status(400).json({ errors: [messages.slug.format] });
+adminRouter.post(
+  "/questions",
+  validateBody(createQuestionSchema),
+  async (req, res) => {
+    const { title, statement, hints } = req.body;
+    const slug = req.body.slug ?? slugify(title);
+    if (!slug) return res.status(400).json({ errors: [messages.slug.format] });
 
-  try {
-    const question = await createQuestion({
-      title,
-      slug,
-      statement,
-      hints,
-      createdBy: req.user.id,
-    });
-    if (!question) return res.status(409).json({ errors: ["slug already exists"] });
-    res.status(201).json(question);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ errors: ["could not create question"] });
-  }
-});
+    try {
+      const question = await createQuestion({
+        title,
+        slug,
+        statement,
+        hints,
+        createdBy: req.user.id,
+      });
+      if (!question)
+        return res.status(409).json({ errors: ["slug already exists"] });
+      res.status(201).json(question);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ errors: ["could not create question"] });
+    }
+  },
+);
 
 adminRouter.get("/questions", async (req, res) => {
   try {
@@ -129,7 +183,8 @@ adminRouter.get(
   async (req, res) => {
     try {
       const question = await findQuestionByID(req.params.id);
-      if (!question) return res.status(404).json({ errors: ["question not found"] });
+      if (!question)
+        return res.status(404).json({ errors: ["question not found"] });
       const [testCases, solutions] = await Promise.all([
         listTestCases(question.id),
         listSolutions(question.id),
@@ -150,14 +205,24 @@ adminRouter.patch(
     const { title, slug, statement, hints } = req.body;
     try {
       const existing = await findQuestionByID(req.params.id);
-      if (!existing) return res.status(404).json({ errors: ["question not found"] });
+      if (!existing)
+        return res.status(404).json({ errors: ["question not found"] });
       if (!isEditable(existing.status)) {
-        return res.status(409).json({ errors: ["question can only be edited while draft"] });
+        return res
+          .status(409)
+          .json({ errors: ["question can only be edited while draft"] });
       }
-      const question = await updateQuestion({ id: req.params.id, title, slug, statement, hints });
+      const question = await updateQuestion({
+        id: req.params.id,
+        title,
+        slug,
+        statement,
+        hints,
+      });
       res.status(200).json(question);
     } catch (err) {
-      if (err.code === "23505") return res.status(409).json({ errors: ["slug already exists"] });
+      if (err.code === "23505")
+        return res.status(409).json({ errors: ["slug already exists"] });
       console.error(err);
       res.status(500).json({ errors: ["could not update question"] });
     }
@@ -174,15 +239,29 @@ adminRouter.post(
     const { kind, input, explanation } = req.body;
     try {
       const question = await findQuestionByID(req.params.id);
-      if (!question) return res.status(404).json({ errors: ["question not found"] });
+      if (!question)
+        return res.status(404).json({ errors: ["question not found"] });
       if (!isEditable(question.status)) {
-        return res.status(409).json({ errors: ["question can only be edited while draft"] });
+        return res
+          .status(409)
+          .json({ errors: ["question can only be edited while draft"] });
       }
       const counts = await countByKind(question.id);
       if (counts.sample + counts.hidden >= MAX_TEST_CASES) {
-        return res.status(409).json({ errors: [`a question can have at most ${MAX_TEST_CASES} test cases`] });
+        return res
+          .status(409)
+          .json({
+            errors: [
+              `a question can have at most ${MAX_TEST_CASES} test cases`,
+            ],
+          });
       }
-      const testCase = await createTestCase({ questionID: question.id, kind, input, explanation });
+      const testCase = await createTestCase({
+        questionID: question.id,
+        kind,
+        input,
+        explanation,
+      });
       res.status(201).json(testCase);
     } catch (err) {
       console.error(err);
@@ -197,12 +276,19 @@ adminRouter.delete(
   async (req, res) => {
     try {
       const question = await findQuestionByID(req.params.id);
-      if (!question) return res.status(404).json({ errors: ["question not found"] });
+      if (!question)
+        return res.status(404).json({ errors: ["question not found"] });
       if (!isEditable(question.status)) {
-        return res.status(409).json({ errors: ["question can only be edited while draft"] });
+        return res
+          .status(409)
+          .json({ errors: ["question can only be edited while draft"] });
       }
-      const deleted = await deleteTestCase({ questionID: question.id, id: req.params.tcId });
-      if (!deleted) return res.status(404).json({ errors: ["test case not found"] });
+      const deleted = await deleteTestCase({
+        questionID: question.id,
+        id: req.params.tcId,
+      });
+      if (!deleted)
+        return res.status(404).json({ errors: ["test case not found"] });
       res.status(204).end();
     } catch (err) {
       console.error(err);
@@ -221,9 +307,12 @@ adminRouter.post(
     const { languageID, code, isReference } = req.body;
     try {
       const question = await findQuestionByID(req.params.id);
-      if (!question) return res.status(404).json({ errors: ["question not found"] });
+      if (!question)
+        return res.status(404).json({ errors: ["question not found"] });
       if (!isEditable(question.status)) {
-        return res.status(409).json({ errors: ["question can only be edited while draft"] });
+        return res
+          .status(409)
+          .json({ errors: ["question can only be edited while draft"] });
       }
 
       const language = await findLanguageByID(languageID);
@@ -239,7 +328,9 @@ adminRouter.post(
       });
       // null means the partial unique index rejected a second reference solution
       if (!solution) {
-        return res.status(409).json({ errors: ["a reference solution already exists"] });
+        return res
+          .status(409)
+          .json({ errors: ["a reference solution already exists"] });
       }
       res.status(201).json(solution);
     } catch (err) {
@@ -257,19 +348,30 @@ adminRouter.post(
   async (req, res) => {
     try {
       const question = await findQuestionByID(req.params.id);
-      if (!question) return res.status(404).json({ errors: ["question not found"] });
+      if (!question)
+        return res.status(404).json({ errors: ["question not found"] });
       if (!isEditable(question.status)) {
-        return res.status(409).json({ errors: ["question is not in a generatable state"] });
+        return res
+          .status(409)
+          .json({ errors: ["question is not in a generatable state"] });
       }
 
       const reference = await findReferenceSolution(question.id);
       if (!reference) {
-        return res.status(400).json({ errors: ["add a reference solution first"] });
+        return res
+          .status(400)
+          .json({ errors: ["add a reference solution first"] });
       }
 
       const counts = await countByKind(question.id);
       if (counts.sample < MIN_SAMPLE_CASES) {
-        return res.status(400).json({ errors: [`at least ${MIN_SAMPLE_CASES} sample test cases are required`] });
+        return res
+          .status(400)
+          .json({
+            errors: [
+              `at least ${MIN_SAMPLE_CASES} sample test cases are required`,
+            ],
+          });
       }
 
       const testCases = await listRunnableTestCases(question.id);
@@ -293,6 +395,25 @@ adminRouter.post(
     } catch (err) {
       console.error(err);
       res.status(500).json({ errors: ["could not start generation"] });
+    }
+  },
+);
+
+// Revert a ready (or stuck) question to draft so it can be edited and
+// re-generated. Existing expected outputs stay until the next generate
+// overwrites them; a draft accepts no new submissions, so they cannot be used.
+adminRouter.post(
+  "/questions/:id/unpublish",
+  validateParams(idParamSchema),
+  async (req, res) => {
+    try {
+      const question = await findQuestionByID(req.params.id);
+      if (!question) return res.status(404).json({ errors: ["question not found"] });
+      const updated = await setQuestionStatus(question.id, QuestionStatus.draft);
+      res.status(200).json(updated);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ errors: ["could not unpublish question"] });
     }
   },
 );

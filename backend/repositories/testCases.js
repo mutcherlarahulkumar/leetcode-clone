@@ -38,6 +38,17 @@ export const deleteTestCase = async ({ questionID, id }) => {
   return rows[0] ?? null;
 };
 
+// Public: sample cases only. Hidden cases (input and expected output) must
+// never leave the backend to a solver.
+export const listSampleTestCases = async (questionID) => {
+  const { rows } = await pool.query(
+    `SELECT id, input, expected_output, explanation, position
+       FROM test_cases WHERE question_id = $1 AND kind = 'sample' ORDER BY position`,
+    [questionID],
+  );
+  return rows;
+};
+
 // Just what the worker needs: id + input, ordered, for every case. The worker
 // gets no expected outputs -- comparison happens back here.
 export const listRunnableTestCases = async (questionID) => {

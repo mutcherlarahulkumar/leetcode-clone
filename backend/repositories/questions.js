@@ -54,6 +54,23 @@ export const findQuestionByID = async (id) => {
   return rows[0] ?? null;
 };
 
+// Public browse: only ready questions, and only the fields a list needs.
+export const listReadyQuestions = async () => {
+  const { rows } = await pool.query(
+    "SELECT id, title, slug, created_at FROM questions WHERE status = 'ready' ORDER BY created_at DESC",
+  );
+  return rows;
+};
+
+// Public detail: null unless the question is ready, so drafts never leak.
+export const findReadyQuestionByID = async (id) => {
+  const { rows } = await pool.query(
+    "SELECT id, title, slug, statement, hints, created_at FROM questions WHERE id = $1 AND status = 'ready'",
+    [id],
+  );
+  return rows[0] ?? null;
+};
+
 export const setQuestionStatus = async (id, status) => {
   const { rows } = await pool.query(
     "UPDATE questions SET status = $2 WHERE id = $1 RETURNING id, status",

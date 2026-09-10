@@ -5,6 +5,7 @@ import { client } from "./redis.js";
 import { authRouter } from "./routes/auth.js";
 import { submissionsRouter } from "./routes/submissions.js";
 import { languagesRouter } from "./routes/languages.js";
+import { questionsRouter } from "./routes/questions.js";
 import { adminRouter } from "./routes/admin.js";
 import { notFound, errorHandler } from "./middleware/errors.js";
 
@@ -18,6 +19,7 @@ app.use(express.json({ limit: "1mb" }));
 app.use("/auth", authRouter);
 app.use("/submissions", submissionsRouter);
 app.use("/languages", languagesRouter);
+app.use("/questions", questionsRouter);
 app.use("/admin", adminRouter);
 
 // order matters: unknown route first, then the catch-all error handler last
