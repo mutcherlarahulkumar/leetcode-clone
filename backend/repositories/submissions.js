@@ -6,12 +6,12 @@ import { Status } from "../models/status.js";
 export const createSubmission = async ({
   code,
   questionID,
-  language,
+  languageID,
   userID,
 }) => {
   const { rows } = await pool.query(
-    "INSERT INTO submissions(code, status, question_id, language, user_id) VALUES($1, $2, $3, $4, $5) RETURNING id, status",
-    [code, Status.pending, questionID, language, userID],
+    "INSERT INTO submissions(code, status, question_id, language_id, user_id) VALUES($1, $2, $3, $4, $5) RETURNING id, status",
+    [code, Status.pending, questionID, languageID, userID],
   );
   return rows[0];
 };

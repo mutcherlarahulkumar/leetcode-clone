@@ -1,5 +1,4 @@
 import * as yup from "yup";
-import { Language } from "../models/language.js";
 import {
   MAX_SOLUTION_LENGTH,
   MIN_PASSWORD_LENGTH,
@@ -23,12 +22,10 @@ export const createSubmissionSchema = yup.object({
       messages.solution.blank,
       (value) => !value || value.trim().length > 0,
     ),
-  language: yup
+  languageID: yup
     .string()
-    .strict(true)
-    .typeError(messages.language.oneOf)
-    .oneOf(Object.keys(Language), messages.language.oneOf)
-    .required(messages.language.required),
+    .uuid(messages.languageID.uuid)
+    .required(messages.languageID.required),
 });
 
 // Passwords are not trimmed -- leading/trailing spaces are the user's choice.
