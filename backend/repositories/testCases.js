@@ -59,13 +59,20 @@ export const listRunnableTestCases = async (questionID) => {
   return rows;
 };
 
-// Expected outputs for judging, keyed by case id.
-export const expectedOutputsFor = async (questionID) => {
+// Everything judging needs per case, keyed by id: the kind decides how much of
+// this the result may expose (sample = show input/expected/actual, hidden =
+// pass/fail only), the expected output decides the verdict.
+export const caseDataFor = async (questionID) => {
   const { rows } = await pool.query(
-    "SELECT id, expected_output FROM test_cases WHERE question_id = $1",
+    "SELECT id, kind, input, expected_output FROM test_cases WHERE question_id = $1",
     [questionID],
   );
-  return new Map(rows.map((r) => [r.id, r.expected_output]));
+  return new Map(
+    rows.map((r) => [
+      r.id,
+      { kind: r.kind, input: r.input, expected: r.expected_output },
+    ]),
+  );
 };
 
 // Store the reference solution's outputs as the expected outputs, all or

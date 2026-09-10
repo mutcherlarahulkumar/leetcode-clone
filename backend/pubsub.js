@@ -3,7 +3,7 @@ import { SUBMISSION_RESULT } from "./constants/channels.js";
 import { Status } from "./models/status.js";
 import { QuestionStatus } from "./models/questionStatus.js";
 import { judgeSubmission, evaluateGeneration } from "./judge.js";
-import { expectedOutputsFor, setExpectedOutputs } from "./repositories/testCases.js";
+import { caseDataFor, setExpectedOutputs } from "./repositories/testCases.js";
 import { setSolutionResult } from "./repositories/solutions.js";
 import { setQuestionStatus } from "./repositories/questions.js";
 import { saveJudgment } from "./repositories/submissions.js";
@@ -28,8 +28,8 @@ const handleGeneration = async (r) => {
 
 // A user submission: compare each output to the stored expected output.
 const handleSubmission = async (r) => {
-  const expected = await expectedOutputsFor(r.questionID);
-  const j = judgeSubmission(r, expected);
+  const caseData = await caseDataFor(r.questionID);
+  const j = judgeSubmission(r, caseData);
   await saveJudgment({
     id: r.id,
     status: j.status,

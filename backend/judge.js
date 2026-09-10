@@ -1,4 +1,5 @@
 import { Status } from "./models/status.js";
+import { TestCaseKind } from "./models/testCaseKind.js";
 
 // The worker reports one of these per case; it never decides accepted/wrong.
 const CASE_OK = "ok";
@@ -19,16 +20,20 @@ const matches = (actual, expected) =>
   String(actual).replace(/\s+$/, "") === String(expected).replace(/\s+$/, "");
 
 /**
- * Judge a user submission against the stored expected outputs.
+ * Judge a user submission against the stored test case data.
  * @param {{compiled:boolean, compileOutput:string, cases:{id,status,output}[], totalMs:number}} result
- * @param {Map<string,string>} expectedById  test case id -> expected_output
+ * @param {Map<string,{kind:string,input:string,expected:string}>} caseDataById
+ *
+ * Each result entry is shaped for the UI: sample cases carry input/expected/
+ * actual so the panel can show a diff; hidden cases carry only id + status, so
+ * their inputs and outputs never reach the submitter.
  */
-export const judgeSubmission = (result, expectedById) => {
+export const judgeSubmission = (result, caseDataById) => {
   if (!result.compiled) {
     return {
       status: Status.compile_error,
       passedCount: 0,
-      totalCount: expectedById.size,
+      totalCount: caseDataById.size,
       results: [],
       output: result.compileOutput ?? "",
       metrics: { totalMs: result.totalMs },
@@ -38,15 +43,24 @@ export const judgeSubmission = (result, expectedById) => {
   let passed = 0;
   let firstFail = null;
   const results = result.cases.map((c) => {
+    const meta = caseDataById.get(c.id) ?? {};
     let verdict;
     if (c.status !== CASE_OK) verdict = failStatus(c.status);
-    else if (matches(c.output, expectedById.get(c.id))) {
+    else if (matches(c.output, meta.expected)) {
       verdict = Status.accepted;
       passed++;
     } else verdict = Status.wrong_answer;
 
     if (verdict !== Status.accepted && !firstFail) firstFail = verdict;
-    return { id: c.id, status: verdict };
+
+    const entry = { id: c.id, kind: meta.kind, status: verdict };
+    // only sample cases reveal their data; hidden cases stay pass/fail only
+    if (meta.kind === TestCaseKind.sample) {
+      entry.input = meta.input;
+      entry.expected = meta.expected;
+      entry.actual = c.output;
+    }
+    return entry;
   });
 
   return {
