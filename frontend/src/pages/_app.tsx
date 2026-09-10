@@ -8,7 +8,9 @@ import { Toaster } from "sonner";
 import { makeQueryClient } from "@lecode/lib/queryClient";
 import { AuthProvider } from "@lecode/lib/auth/AuthContext";
 import { cn } from "@lecode/lib/utils";
-import "@lecode/styles/globals.css";
+// relative, NOT the @lecode alias: Next serves global CSS reliably from a
+// relative path but silently drops an aliased global CSS import in `next dev`.
+import "../styles/globals.css";
 
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 const mono = JetBrains_Mono({

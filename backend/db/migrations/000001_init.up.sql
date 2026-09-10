@@ -102,6 +102,24 @@ CREATE TABLE solutions (
 CREATE UNIQUE INDEX solutions_one_reference_idx
     ON solutions (question_id) WHERE is_reference;
 
+-- Per (question, language) code template, LeetCode style. stub is the editable
+-- starter the solver sees; harness is the locked wrapper that reads stdin, calls
+-- the solution, and prints the result. The worker never sees these separately --
+-- the backend injects the submitted code into the harness at the {{SOLUTION}}
+-- placeholder and runs the assembled program. A question offers exactly the
+-- languages that have a row here.
+CREATE TABLE question_templates (
+    id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    question_id uuid NOT NULL REFERENCES questions (id) ON DELETE CASCADE,
+    language_id uuid NOT NULL REFERENCES languages (id),
+    stub        text NOT NULL,
+    harness     text NOT NULL,
+    UNIQUE (question_id, language_id)
+);
+
+CREATE INDEX question_templates_question_id_idx
+    ON question_templates (question_id);
+
 CREATE TABLE submissions (
     id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     code         text NOT NULL,

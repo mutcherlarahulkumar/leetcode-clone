@@ -6,6 +6,7 @@ import {
   findReadyQuestionByID,
 } from "../repositories/questions.js";
 import { listSampleTestCases } from "../repositories/testCases.js";
+import { listTemplatesPublic } from "../repositories/questionTemplates.js";
 
 export const questionsRouter = Router();
 
@@ -24,9 +25,13 @@ questionsRouter.get("/:id", validateParams(idParamSchema), async (req, res) => {
   try {
     const question = await findReadyQuestionByID(req.params.id);
     if (!question) return res.status(404).json({ errors: ["question not found"] });
-    // sample cases only -- hidden inputs/outputs stay on the server
-    const samples = await listSampleTestCases(question.id);
-    res.status(200).json({ ...question, samples });
+    // sample cases only -- hidden inputs/outputs stay on the server; templates
+    // give the available languages + the starter stub (never the harness)
+    const [samples, templates] = await Promise.all([
+      listSampleTestCases(question.id),
+      listTemplatesPublic(question.id),
+    ]);
+    res.status(200).json({ ...question, samples, templates });
   } catch (err) {
     console.error(err);
     res.status(500).json({ errors: ["could not fetch question"] });

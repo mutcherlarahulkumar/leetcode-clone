@@ -1,5 +1,6 @@
 -- reverse dependency order
 DROP TABLE IF EXISTS submissions;
+DROP TABLE IF EXISTS question_templates;
 DROP TABLE IF EXISTS solutions;
 DROP TABLE IF EXISTS test_cases;
 DROP TABLE IF EXISTS questions;

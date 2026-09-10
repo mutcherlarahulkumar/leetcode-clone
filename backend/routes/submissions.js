@@ -10,9 +10,11 @@ import {
   listRunnableTestCases,
   listSampleTestCases,
 } from "../repositories/testCases.js";
+import { findTemplate } from "../repositories/questionTemplates.js";
 import { QuestionStatus } from "../models/questionStatus.js";
 import { messages } from "../validation/messages.js";
 import { judgeRun } from "../judge.js";
+import { assembleProgram } from "../templates.js";
 import { newRunId, awaitRun } from "../runRegistry.js";
 import { client } from "../redis.js";
 import { SUBMISSION_QUEUE } from "../constants/channels.js";
@@ -43,7 +45,14 @@ const resolveTarget = async (req, res) => {
     res.status(400).json({ errors: [messages.languageID.unknown] });
     return null;
   }
-  return { question, language };
+  // function-mode: the language must have a template for this question, and its
+  // harness is what makes the submitted function a runnable program
+  const template = await findTemplate(question.id, language.id);
+  if (!template) {
+    res.status(400).json({ errors: ["this language is not available for this question"] });
+    return null;
+  }
+  return { question, language, template };
 };
 
 export const submissionsRouter = Router();
@@ -76,10 +85,11 @@ submissionsRouter.post(
 
     const target = await resolveTarget(req, res);
     if (!target) return;
-    const { language } = target;
+    const { language, template } = target;
 
     let submission;
     try {
+      // store what the user wrote (the function body), not the assembled program
       submission = await createSubmission({
         code: solution,
         questionID,
@@ -92,7 +102,8 @@ submissionsRouter.post(
     }
 
     // the worker has no DB access, so the test case inputs travel with the job;
-    // it returns raw outputs and the backend compares them here
+    // it returns raw outputs and the backend compares them here. The code sent
+    // is the harness with the user's function injected.
     const testCases = await listRunnableTestCases(questionID);
     await client.lPush(
       SUBMISSION_QUEUE,
@@ -101,7 +112,7 @@ submissionsRouter.post(
         id: submission.id,
         questionID,
         language: language.slug, // worker keys its images on the slug
-        code: solution,
+        code: assembleProgram(template.harness, solution),
         testCases,
       }),
     );
@@ -122,7 +133,7 @@ submissionsRouter.post(
 
     const target = await resolveTarget(req, res);
     if (!target) return;
-    const { question, language } = target;
+    const { question, language, template } = target;
 
     const samples = await listSampleTestCases(question.id);
     const sampleById = new Map(
@@ -137,7 +148,7 @@ submissionsRouter.post(
         id: runId,
         questionID: question.id,
         language: language.slug,
-        code: solution,
+        code: assembleProgram(template.harness, solution),
         testCases: samples.map((s) => ({ id: s.id, input: s.input })),
       }),
     );

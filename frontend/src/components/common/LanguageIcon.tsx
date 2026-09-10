@@ -1,4 +1,4 @@
-import { SiCplusplus, SiTypescript, SiGo } from "react-icons/si";
+import { SiCplusplus, SiTypescript, SiGo, SiPython } from "react-icons/si";
 import type { IconType } from "react-icons";
 
 // Brand logos come from react-icons' Simple Icons set (no image assets). Keyed
@@ -7,6 +7,7 @@ const ICONS: Record<string, { Icon: IconType; color: string }> = {
   cpp: { Icon: SiCplusplus, color: "#00599C" },
   ts: { Icon: SiTypescript, color: "#3178C6" },
   go: { Icon: SiGo, color: "#00ADD8" },
+  python: { Icon: SiPython, color: "#3776AB" },
 };
 
 export function LanguageIcon({

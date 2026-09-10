@@ -8,9 +8,19 @@ import {
   createSolutionSchema,
   createLanguageSchema,
   updateLanguageSchema,
+  templateSchema,
   idParamSchema,
   testCaseParamSchema,
+  templateParamSchema,
 } from "../validation/schemas.js";
+import {
+  upsertTemplate,
+  deleteTemplate,
+  listTemplatesForAdmin,
+  countTemplates,
+  findTemplate,
+} from "../repositories/questionTemplates.js";
+import { assembleProgram } from "../templates.js";
 import { messages } from "../validation/messages.js";
 import { QuestionStatus } from "../models/questionStatus.js";
 import {
@@ -189,11 +199,12 @@ adminRouter.get(
       const question = await findQuestionByID(req.params.id);
       if (!question)
         return res.status(404).json({ errors: ["question not found"] });
-      const [testCases, solutions] = await Promise.all([
+      const [testCases, solutions, templates] = await Promise.all([
         listTestCases(question.id),
         listSolutions(question.id),
+        listTemplatesForAdmin(question.id),
       ]);
-      res.status(200).json({ ...question, testCases, solutions });
+      res.status(200).json({ ...question, testCases, solutions, templates });
     } catch (err) {
       console.error(err);
       res.status(500).json({ errors: ["could not fetch question"] });
@@ -350,6 +361,62 @@ adminRouter.post(
   },
 );
 
+// --- templates (stub + harness per language) ---------------------------------
+
+adminRouter.post(
+  "/questions/:id/templates",
+  validateParams(idParamSchema),
+  validateBody(templateSchema),
+  async (req, res) => {
+    const { languageID, stub, harness } = req.body;
+    try {
+      const question = await findQuestionByID(req.params.id);
+      if (!question)
+        return res.status(404).json({ errors: ["question not found"] });
+
+      const language = await findLanguageByID(languageID);
+      if (!language || !language.is_enabled) {
+        return res.status(400).json({ errors: [messages.languageID.unknown] });
+      }
+
+      const template = await upsertTemplate({
+        questionID: question.id,
+        languageID: language.id,
+        stub,
+        harness,
+      });
+      await revertToDraft(question);
+      res.status(200).json(template);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ errors: ["could not save template"] });
+    }
+  },
+);
+
+adminRouter.delete(
+  "/questions/:id/templates/:languageId",
+  validateParams(templateParamSchema),
+  async (req, res) => {
+    try {
+      const question = await findQuestionByID(req.params.id);
+      if (!question)
+        return res.status(404).json({ errors: ["question not found"] });
+      const deleted = await deleteTemplate({
+        questionID: question.id,
+        languageID: req.params.languageId,
+      });
+      if (!deleted)
+        return res.status(404).json({ errors: ["template not found"] });
+      await revertToDraft(question);
+      res.status(204).end();
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ errors: ["could not delete template"] });
+    }
+  },
+);
+
 // --- generation: run the reference solution to produce expected outputs -------
 
 adminRouter.post(
@@ -371,6 +438,15 @@ adminRouter.post(
         return res
           .status(400)
           .json({ errors: ["add a reference solution first"] });
+      }
+
+      // the reference solution is a function body; it needs its language's
+      // harness to become a runnable program
+      const template = await findTemplate(question.id, reference.language_id);
+      if (!template) {
+        return res.status(400).json({
+          errors: ["add a template for the reference solution's language"],
+        });
       }
 
       const counts = await countByKind(question.id);
@@ -396,7 +472,7 @@ adminRouter.post(
           id: reference.id,
           questionID: question.id,
           language: reference.language,
-          code: reference.code,
+          code: assembleProgram(template.harness, reference.code),
           testCases,
         }),
       );

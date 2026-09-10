@@ -157,6 +157,27 @@ export const createSolutionSchema = yup.object({
   isReference: yup.boolean().default(false),
 });
 
+// --- admin: question templates (stub + harness per language) ---
+
+export const templateSchema = yup.object({
+  languageID: languageIDField,
+  stub: yup
+    .string()
+    .strict(true)
+    .max(MAX_SOLUTION_LENGTH, messages.template.max)
+    .required(messages.template.stubRequired)
+    .test("not-blank", messages.template.stubRequired, (v) => !v || v.trim().length > 0),
+  harness: yup
+    .string()
+    .strict(true)
+    .max(MAX_SOLUTION_LENGTH, messages.template.max)
+    .required(messages.template.harnessRequired)
+    .test("not-blank", messages.template.harnessRequired, (v) => !v || v.trim().length > 0)
+    .test("has-placeholder", messages.template.harnessPlaceholder, (v) =>
+      !v ? true : v.includes("{{SOLUTION}}"),
+    ),
+});
+
 // --- admin: languages ---
 
 export const createLanguageSchema = yup.object({
@@ -196,6 +217,11 @@ export const idParamSchema = yup.object({
 export const testCaseParamSchema = yup.object({
   id: yup.string().uuid("id must be a valid uuid").required(),
   tcId: yup.string().uuid("test case id must be a valid uuid").required(),
+});
+
+export const templateParamSchema = yup.object({
+  id: yup.string().uuid("id must be a valid uuid").required(),
+  languageId: yup.string().uuid("language id must be a valid uuid").required(),
 });
 
 // yup throws on the first failure unless abortEarly is off; we want every error.

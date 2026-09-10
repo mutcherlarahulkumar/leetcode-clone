@@ -56,6 +56,24 @@ export const solutionSchema = yup.object({
 });
 export type SolutionValues = yup.InferType<typeof solutionSchema>;
 
+export const templateSchema = yup.object({
+  languageID: yup.string().uuid("pick a language").required("pick a language"),
+  stub: yup
+    .string()
+    .max(LIMITS.MAX_SOLUTION_LENGTH, `stub cannot exceed ${LIMITS.MAX_SOLUTION_LENGTH} characters`)
+    .test("not-blank", "stub is required", notBlank)
+    .required("stub is required"),
+  harness: yup
+    .string()
+    .max(LIMITS.MAX_SOLUTION_LENGTH, `harness cannot exceed ${LIMITS.MAX_SOLUTION_LENGTH} characters`)
+    .test("not-blank", "harness is required", notBlank)
+    .test("placeholder", "harness must contain the {{SOLUTION}} placeholder", (v) =>
+      v ? v.includes("{{SOLUTION}}") : false,
+    )
+    .required("harness is required"),
+});
+export type TemplateValues = yup.InferType<typeof templateSchema>;
+
 export const languageSchema = yup.object({
   slug: yup
     .string()

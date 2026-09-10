@@ -75,6 +75,12 @@ export const messages = {
     blank: "code cannot be blank",
     max: `code cannot exceed ${MAX_SOLUTION_LENGTH} characters`,
   },
+  template: {
+    stubRequired: "stub is required",
+    harnessRequired: "harness is required",
+    harnessPlaceholder: "harness must contain the {{SOLUTION}} placeholder",
+    max: `template code cannot exceed ${MAX_SOLUTION_LENGTH} characters`,
+  },
   language: {
     slugRequired: "slug is required",
     slugFormat: `slug ${slugRule}`,

@@ -64,6 +64,16 @@ export interface SampleCase {
   position: number;
 }
 
+// Public template: the languages a solver can pick + the starter stub. The
+// harness is never sent to the client.
+export interface QuestionTemplatePublic {
+  language_id: string;
+  language_name: string;
+  language_slug: string;
+  language_version: string;
+  stub: string;
+}
+
 export interface QuestionDetail {
   id: string;
   title: string;
@@ -72,6 +82,7 @@ export interface QuestionDetail {
   hints: Record<string, unknown> | null;
   created_at: string;
   samples: SampleCase[];
+  templates: QuestionTemplatePublic[];
 }
 
 // one entry inside a submission's judged results
@@ -160,11 +171,21 @@ export interface AdminSolution {
   created_at: string;
 }
 
+export interface AdminTemplate {
+  id: string;
+  language_id: string;
+  language_name: string;
+  language_slug: string;
+  stub: string;
+  harness: string;
+}
+
 export interface AdminQuestionDetail extends AdminQuestionListItem {
   statement: string;
   hints: Record<string, unknown> | null;
   testCases: AdminTestCase[];
   solutions: AdminSolution[];
+  templates: AdminTemplate[];
 }
 
 export interface AdminUser {

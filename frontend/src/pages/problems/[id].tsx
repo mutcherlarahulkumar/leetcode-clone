@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
+import type { ImperativePanelGroupHandle } from "react-resizable-panels";
 import { toast } from "sonner";
 import {
   FiPlay,
@@ -10,7 +11,6 @@ import {
   FiZoomOut,
 } from "react-icons/fi";
 import { useQuestion } from "@lecode/api/questions";
-import { useLanguages } from "@lecode/api/languages";
 import {
   useCreateSubmission,
   useSubmission,
@@ -19,7 +19,7 @@ import {
 } from "@lecode/api/submissions";
 import { useAuth } from "@lecode/lib/auth/AuthContext";
 import { errorMessage } from "@lecode/lib/axios";
-import { ROUTES, BOILERPLATE, LANG_SLUG } from "@lecode/constants";
+import { ROUTES } from "@lecode/constants";
 import { Navbar } from "@lecode/components/common/Navbar";
 import { CodeEditor, type MonacoEditor } from "@lecode/components/common/CodeEditor";
 import { Console } from "@lecode/components/common/Console";
@@ -43,10 +43,6 @@ import {
 import { Button } from "@lecode/components/ui/button";
 import { Skeleton } from "@lecode/components/ui/skeleton";
 
-const isReplaceable = (code: string) =>
-  code.trim() === "" ||
-  Object.values(BOILERPLATE).some((b) => b.trim() === code.trim());
-
 const MIN_FONT = 11;
 const MAX_FONT = 22;
 
@@ -56,7 +52,6 @@ export default function SolvePage() {
   const { isAuthenticated } = useAuth();
 
   const question = useQuestion(id);
-  const languages = useLanguages();
   const create = useCreateSubmission();
   const run = useRunSolution();
 
@@ -67,23 +62,35 @@ export default function SolvePage() {
   const [lastAction, setLastAction] = useState<"run" | "submit" | null>(null);
   const [consoleTab, setConsoleTab] = useState("testcase");
   const editorRef = useRef<MonacoEditor | null>(null);
+  const outerPanels = useRef<ImperativePanelGroupHandle>(null);
+  const innerPanels = useRef<ImperativePanelGroupHandle>(null);
 
-  const enabled = useMemo(
-    () => (languages.data ?? []).filter((l) => l.is_enabled),
-    [languages.data],
-  );
-  const selected = enabled.find((l) => l.id === languageID);
-  const slug = selected ? LANG_SLUG[selected.name] : undefined;
+  // the "reset layout" button in the navbar dispatches this event
+  useEffect(() => {
+    const reset = () => {
+      outerPanels.current?.setLayout([42, 58]);
+      innerPanels.current?.setLayout([62, 38]);
+    };
+    window.addEventListener("lecode:reset-layout", reset);
+    return () => window.removeEventListener("lecode:reset-layout", reset);
+  }, []);
+
+  const templates = useMemo(() => question.data?.templates ?? [], [question.data]);
+  const selected = templates.find((t) => t.language_id === languageID);
+  const slug = selected?.language_slug;
 
   useEffect(() => {
-    if (!languageID && enabled.length > 0) setLanguageID(enabled[0]!.id);
-  }, [enabled, languageID]);
+    if (!languageID && templates.length > 0) setLanguageID(templates[0]!.language_id);
+  }, [templates, languageID]);
 
+  // load the selected language's stub, unless the solver has already typed
   useEffect(() => {
-    if (!slug) return;
-    const bp = BOILERPLATE[slug] ?? "";
-    setCode((prev) => (isReplaceable(prev) ? bp : prev));
-  }, [slug]);
+    if (!selected) return;
+    const replaceable = (c: string) =>
+      c.trim() === "" || templates.some((t) => t.stub.trim() === c.trim());
+    setCode((prev) => (replaceable(prev) ? selected.stub : prev));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [languageID]);
 
   const submission = useSubmission(submissionId);
   const mySubs = useMySubmissions(isAuthenticated ? id : undefined);
@@ -121,9 +128,15 @@ export default function SolvePage() {
   };
 
   const onReset = () => {
-    if (slug) setCode(BOILERPLATE[slug] ?? "");
+    if (selected) setCode(selected.stub);
   };
   const onFormat = () => {
+    // Monaco only ships a client-side formatter for TypeScript here; C++/Go
+    // formatting (clang-format / gofmt) would need the server.
+    if (slug !== "ts") {
+      toast.info("Auto-format is only available for TypeScript right now");
+      return;
+    }
     editorRef.current?.getAction("editor.action.formatDocument")?.run();
   };
   const bumpFont = (delta: number) =>
@@ -133,7 +146,7 @@ export default function SolvePage() {
     <div className="flex h-screen flex-col overflow-hidden">
       <Navbar />
       <div className="min-h-0 flex-1">
-        <ResizablePanelGroup direction="horizontal">
+        <ResizablePanelGroup ref={outerPanels} direction="horizontal">
           {/* left: description / submissions */}
           <ResizablePanel defaultSize={42} minSize={22}>
             <Tabs defaultValue="description" className="flex h-full flex-col">
@@ -189,28 +202,31 @@ export default function SolvePage() {
 
           {/* right: editor + console */}
           <ResizablePanel defaultSize={58} minSize={30}>
-            <ResizablePanelGroup direction="vertical">
+            <ResizablePanelGroup ref={innerPanels} direction="vertical">
               <ResizablePanel defaultSize={62} minSize={20}>
                 <div className="flex h-full flex-col">
                   {/* toolbar */}
-                  <div className="flex items-center gap-1 border-b p-2">
+                  <div className="flex items-center gap-2 border-b px-3 py-2.5">
                     <Select value={languageID} onValueChange={setLanguageID}>
-                      <SelectTrigger className="h-8 w-40">
+                      <SelectTrigger className="h-9 w-44 gap-2">
                         {selected ? (
-                          <span className="flex items-center gap-2">
-                            <LanguageIcon slug={slug} className="h-4 w-4" />
-                            {selected.name}
+                          <span className="flex items-center gap-2 truncate">
+                            <LanguageIcon slug={slug} className="h-4 w-4 shrink-0" />
+                            {selected.language_name}
                           </span>
                         ) : (
                           <SelectValue placeholder="Language" />
                         )}
                       </SelectTrigger>
-                      <SelectContent>
-                        {enabled.map((l) => (
-                          <SelectItem key={l.id} value={l.id}>
-                            <span className="flex items-center gap-2">
-                              <LanguageIcon slug={LANG_SLUG[l.name]} className="h-4 w-4" />
-                              {l.name} {l.version}
+                      <SelectContent position="popper" sideOffset={6} className="min-w-[13rem]">
+                        {templates.map((t) => (
+                          <SelectItem key={t.language_id} value={t.language_id}>
+                            <span className="flex items-center gap-2.5">
+                              <LanguageIcon slug={t.language_slug} className="h-[18px] w-[18px]" />
+                              <span className="font-medium">{t.language_name}</span>
+                              <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                                {t.language_version}
+                              </span>
                             </span>
                           </SelectItem>
                         ))}

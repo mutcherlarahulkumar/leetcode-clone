@@ -22,6 +22,7 @@ import { withAdminLayout } from "@lecode/lib/layouts/AdminLayout";
 import { QuestionStatusBadge } from "@lecode/components/common/QuestionStatusBadge";
 import { Stepper } from "@lecode/components/admin/Stepper";
 import { TestCasesSection } from "@lecode/components/admin/TestCasesSection";
+import { TemplatesSection } from "@lecode/components/admin/TemplatesSection";
 import { SolutionsSection } from "@lecode/components/admin/SolutionsSection";
 import { FormField } from "@lecode/components/common/FormField";
 import { FormEditor } from "@lecode/components/common/FormEditor";
@@ -33,6 +34,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@lecode/components/ui/
 const STEPS = [
   { key: "details", label: "Details" },
   { key: "tests", label: "Test cases" },
+  { key: "templates", label: "Templates" },
   { key: "solutions", label: "Solutions" },
   { key: "publish", label: "Publish" },
 ];
@@ -133,16 +135,24 @@ export default function EditQuestionPage() {
         </>
       )}
 
-      {/* Step 3 — solutions */}
+      {/* Step 3 — templates */}
       {step === 2 && (
         <>
-          <SolutionsSection questionId={id} solutions={q.solutions} editable />
+          <TemplatesSection questionId={id} templates={q.templates} />
           <StepNav onBack={() => setStep(1)} onNext={() => setStep(3)} />
         </>
       )}
 
-      {/* Step 4 — publish */}
+      {/* Step 4 — solutions */}
       {step === 3 && (
+        <>
+          <SolutionsSection questionId={id} solutions={q.solutions} editable />
+          <StepNav onBack={() => setStep(2)} onNext={() => setStep(4)} />
+        </>
+      )}
+
+      {/* Step 5 — publish */}
+      {step === 4 && (
         <Card>
           <CardHeader>
             <CardTitle>Publish</CardTitle>

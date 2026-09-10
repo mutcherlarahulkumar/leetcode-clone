@@ -35,7 +35,7 @@ export const listSolutions = async (questionID) => {
 // needed to enqueue a generation run.
 export const findReferenceSolution = async (questionID) => {
   const { rows } = await pool.query(
-    `SELECT s.id, s.code, l.slug AS language
+    `SELECT s.id, s.code, s.language_id, l.slug AS language
        FROM solutions s
        JOIN languages l ON l.id = s.language_id
       WHERE s.question_id = $1 AND s.is_reference`,

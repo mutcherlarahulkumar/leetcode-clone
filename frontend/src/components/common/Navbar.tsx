@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { FiCode, FiLogOut, FiShield, FiUser } from "react-icons/fi";
+import { FiCode, FiColumns, FiLogOut, FiShield, FiUser } from "react-icons/fi";
 import { useAuth } from "@lecode/lib/auth/AuthContext";
 import { ROUTES } from "@lecode/constants";
 import { cn } from "@lecode/lib/utils";
@@ -37,6 +37,7 @@ const NavLink = ({ href, label }: { href: string; label: string }) => {
 export function Navbar() {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const router = useRouter();
+  const onSolvePage = router.pathname === "/problems/[id]";
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
@@ -58,6 +59,17 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
+          {onSolvePage && (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Reset layout"
+              title="Reset layout"
+              onClick={() => window.dispatchEvent(new CustomEvent("lecode:reset-layout"))}
+            >
+              <FiColumns />
+            </Button>
+          )}
           <ThemeToggle />
           {isAuthenticated && user ? (
             <DropdownMenu>

@@ -89,6 +89,7 @@ export const LANG_SLUG: Record<string, string> = {
   "C++": "cpp",
   TypeScript: "ts",
   Go: "go",
+  Python: "python",
 };
 
 // Starter code shown in the editor when the solver has not typed anything yet,
@@ -102,9 +103,10 @@ int main() {
     return 0;
 }
 `,
-  ts: `// read from stdin, write your answer to stdout
-const data = require("fs").readFileSync(0, "utf8").trim();
+  ts: `// read stdin if you need it, then print your answer with console.log
+const input = require("fs").readFileSync(0, "utf8").trim();
 
+console.log();
 `,
   go: `package main
 
@@ -114,6 +116,12 @@ func main() {
     // read from stdin with fmt.Scan, print your answer
     _ = fmt.Sprint
 }
+`,
+  python: `import sys
+
+data = sys.stdin.read().split()
+# print your answer
+print()
 `,
 };
 
