@@ -1,17 +1,3 @@
-/**
- * The only seam between the queue and however code actually gets run.
- *
- * Nothing above this file knows about docker, gVisor or microVMs, so a driver
- * can be swapped without touching the consumer.
- *
- * @param {object} submission
- * @param {string} submission.language  a Language value: cpp | ts | go
- * @param {string} submission.code      the submitted source, byte for byte
- * @param {string} [submission.stdin]   test case input, empty until questions exist
- * @returns {Promise<{status: string, output: string}>}
- *          status is a Status value; output is stdout, or the compiler/runtime
- *          error text when the run failed.
- */
 export const runInSandbox = async ({ language, code, stdin = "" }) => {
   // TODO: implement the docker driver, then export it from executor/docker.js
   // and select it here by env (EXECUTOR=stub|docker) so it can be rolled back
