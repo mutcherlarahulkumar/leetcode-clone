@@ -37,3 +37,54 @@ export const deleteTestCase = async ({ questionID, id }) => {
   );
   return rows[0] ?? null;
 };
+
+// Just what the worker needs: id + input, ordered, for every case. The worker
+// gets no expected outputs -- comparison happens back here.
+export const listRunnableTestCases = async (questionID) => {
+  const { rows } = await pool.query(
+    "SELECT id, input FROM test_cases WHERE question_id = $1 ORDER BY position",
+    [questionID],
+  );
+  return rows;
+};
+
+// Expected outputs for judging, keyed by case id.
+export const expectedOutputsFor = async (questionID) => {
+  const { rows } = await pool.query(
+    "SELECT id, expected_output FROM test_cases WHERE question_id = $1",
+    [questionID],
+  );
+  return new Map(rows.map((r) => [r.id, r.expected_output]));
+};
+
+// Store the reference solution's outputs as the expected outputs, all or
+// nothing. Called once when a question is generated.
+export const setExpectedOutputs = async (outputs) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    for (const { id, output } of outputs) {
+      await client.query("UPDATE test_cases SET expected_output = $2 WHERE id = $1", [
+        id,
+        output,
+      ]);
+    }
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+// counts by kind, so the route can enforce "at least 3 samples" before generating
+export const countByKind = async (questionID) => {
+  const { rows } = await pool.query(
+    "SELECT kind, count(*)::int AS n FROM test_cases WHERE question_id = $1 GROUP BY kind",
+    [questionID],
+  );
+  const counts = { sample: 0, hidden: 0 };
+  for (const r of rows) counts[r.kind] = r.n;
+  return counts;
+};

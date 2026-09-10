@@ -18,18 +18,28 @@ import {
   updateQuestion,
   listQuestions,
   findQuestionByID,
+  setQuestionStatus,
 } from "../repositories/questions.js";
 import {
   createTestCase,
   listTestCases,
   deleteTestCase,
+  listRunnableTestCases,
+  countByKind,
 } from "../repositories/testCases.js";
-import { createSolution, listSolutions } from "../repositories/solutions.js";
+import {
+  createSolution,
+  listSolutions,
+  findReferenceSolution,
+} from "../repositories/solutions.js";
 import {
   createLanguage,
   updateLanguage,
   findLanguageByID,
 } from "../repositories/languages.js";
+import { client } from "../redis.js";
+import { SUBMISSION_QUEUE } from "../constants/channels.js";
+import { MIN_SAMPLE_CASES, MAX_TEST_CASES } from "../constants/limits.js";
 
 export const adminRouter = Router();
 
@@ -168,6 +178,10 @@ adminRouter.post(
       if (!isEditable(question.status)) {
         return res.status(409).json({ errors: ["question can only be edited while draft"] });
       }
+      const counts = await countByKind(question.id);
+      if (counts.sample + counts.hidden >= MAX_TEST_CASES) {
+        return res.status(409).json({ errors: [`a question can have at most ${MAX_TEST_CASES} test cases`] });
+      }
       const testCase = await createTestCase({ questionID: question.id, kind, input, explanation });
       res.status(201).json(testCase);
     } catch (err) {
@@ -228,11 +242,57 @@ adminRouter.post(
         return res.status(409).json({ errors: ["a reference solution already exists"] });
       }
       res.status(201).json(solution);
-      // NOTE: running the solution to generate expected outputs + set the
-      // question 'ready' is the next batch (needs the executor).
     } catch (err) {
       console.error(err);
       res.status(500).json({ errors: ["could not create solution"] });
+    }
+  },
+);
+
+// --- generation: run the reference solution to produce expected outputs -------
+
+adminRouter.post(
+  "/questions/:id/generate",
+  validateParams(idParamSchema),
+  async (req, res) => {
+    try {
+      const question = await findQuestionByID(req.params.id);
+      if (!question) return res.status(404).json({ errors: ["question not found"] });
+      if (!isEditable(question.status)) {
+        return res.status(409).json({ errors: ["question is not in a generatable state"] });
+      }
+
+      const reference = await findReferenceSolution(question.id);
+      if (!reference) {
+        return res.status(400).json({ errors: ["add a reference solution first"] });
+      }
+
+      const counts = await countByKind(question.id);
+      if (counts.sample < MIN_SAMPLE_CASES) {
+        return res.status(400).json({ errors: [`at least ${MIN_SAMPLE_CASES} sample test cases are required`] });
+      }
+
+      const testCases = await listRunnableTestCases(question.id);
+      // move to 'generating' before enqueuing, so the state is honest even if the
+      // worker picks it up instantly
+      await setQuestionStatus(question.id, "generating");
+
+      await client.lPush(
+        SUBMISSION_QUEUE,
+        JSON.stringify({
+          kind: "generation",
+          id: reference.id,
+          questionID: question.id,
+          language: reference.language,
+          code: reference.code,
+          testCases,
+        }),
+      );
+
+      res.status(202).json({ questionID: question.id, status: "generating" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ errors: ["could not start generation"] });
     }
   },
 );

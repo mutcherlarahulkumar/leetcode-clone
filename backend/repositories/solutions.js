@@ -30,3 +30,24 @@ export const listSolutions = async (questionID) => {
   );
   return rows;
 };
+
+// The reference solution plus the language slug the worker keys on -- everything
+// needed to enqueue a generation run.
+export const findReferenceSolution = async (questionID) => {
+  const { rows } = await pool.query(
+    `SELECT s.id, s.code, l.slug AS language
+       FROM solutions s
+       JOIN languages l ON l.id = s.language_id
+      WHERE s.question_id = $1 AND s.is_reference`,
+    [questionID],
+  );
+  return rows[0] ?? null;
+};
+
+export const setSolutionResult = async ({ id, status, metrics }) => {
+  const { rows } = await pool.query(
+    "UPDATE solutions SET status = $2, metrics = $3 WHERE id = $1 RETURNING id, status",
+    [id, status, metrics ?? null],
+  );
+  return rows[0] ?? null;
+};

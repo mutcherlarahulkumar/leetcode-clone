@@ -16,3 +16,8 @@ export const MAX_EXPLANATION_LENGTH = 5_000;
 export const MAX_LANG_SLUG_LENGTH = 20;
 export const MAX_LANG_NAME_LENGTH = 50;
 export const MAX_LANG_VERSION_LENGTH = 20;
+
+// A question needs at least this many sample cases before it can be generated,
+// and no more than this many cases total (bounds the per-job run time).
+export const MIN_SAMPLE_CASES = 3;
+export const MAX_TEST_CASES = 50;

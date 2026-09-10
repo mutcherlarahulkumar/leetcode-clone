@@ -5,6 +5,7 @@ import {
 } from "../repositories/submissions.js";
 import { findLanguageByID } from "../repositories/languages.js";
 import { findQuestionByID } from "../repositories/questions.js";
+import { listRunnableTestCases } from "../repositories/testCases.js";
 import { QuestionStatus } from "../models/questionStatus.js";
 import { messages } from "../validation/messages.js";
 import { client } from "../redis.js";
@@ -20,8 +21,6 @@ export const submissionsRouter = Router();
 
 // every route below belongs to the caller, so authenticate once here
 submissionsRouter.use(requireAuth);
-
-let count = 0;
 
 submissionsRouter.post(
   "/",
@@ -57,20 +56,20 @@ submissionsRouter.post(
       return res.status(500).json({ errors: ["could not save submission"] });
     }
 
+    // the worker has no DB access, so the test case inputs travel with the job;
+    // it returns raw outputs and the backend compares them here
+    const testCases = await listRunnableTestCases(questionID);
     await client.lPush(
       SUBMISSION_QUEUE,
       JSON.stringify({
-        userID,
-        submissionID: submission.id,
+        kind: "submission",
+        id: submission.id,
         questionID,
-        solution,
-        // the worker keys its images on the slug, exactly as before
-        language: language.slug,
+        language: language.slug, // worker keys its images on the slug
+        code: solution,
+        testCases,
       }),
     );
-
-    count++;
-    console.log("requests sent from this system", count);
 
     res
       .status(202)
