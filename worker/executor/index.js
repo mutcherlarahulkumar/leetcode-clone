@@ -12,16 +12,17 @@ export const runInSandbox = async ({ language, code, stdin = "" }) => {
   //      --cpus 0.5
   //      --pids-limit 64                     fork bombs
   //      --read-only
-  //      --tmpfs /tmp:rw,nosuid,size=64m     NOT noexec, see below
+  //      --tmpfs /tmp:rw,exec,nosuid,size=64m   `exec` is required, see below
   //      --cap-drop ALL
   //      --security-opt no-new-privileges
   //      --user 65534:65534                  never root
   //      --label judge=1                     so orphans can be swept
   //    Pass code and stdin in over stdin; read stdout/stderr back.
   //
-  //    GOTCHA: noexec on /tmp is the instinctive hardening and it breaks cpp
-  //    and go -- the binary compiles and then refuses to run. Compile and
-  //    execute inside that tmpfs, keep the rootfs read-only.
+  //    GOTCHA, confirmed on docker 26: --tmpfs defaults to noexec, and listing
+  //    your own options does NOT drop it. Without an explicit `exec` a C++ or
+  //    Go binary compiles fine and then dies with "Permission denied" on the
+  //    run step. Compile and execute inside that tmpfs, rootfs stays read-only.
   //
   // 3. TIMEOUTS, three layers, because each one can fail on its own:
   //      a) `timeout` inside the container around the run step
