@@ -1,16 +1,12 @@
 import type { QuestionDetail } from "@lecode/types";
+import { Markdown } from "@lecode/components/common/Markdown";
 
-// TODO: render `statement` as markdown with mermaid support. For now it is
-// shown as preformatted text; adding react-markdown + mermaid is a follow-up
-// and does not change this component's contract.
 export function StatementView({ question }: { question: QuestionDetail }) {
   return (
     <article className="space-y-6">
       <h1 className="text-xl font-bold">{question.title}</h1>
 
-      <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
-        {question.statement}
-      </div>
+      <Markdown>{question.statement}</Markdown>
 
       {question.samples.length > 0 && (
         <section className="space-y-3">
