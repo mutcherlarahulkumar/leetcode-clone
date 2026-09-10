@@ -3,6 +3,8 @@ import {
   createSubmission,
   findSubmissionByID,
 } from "../repositories/submissions.js";
+import { findLanguageByID } from "../repositories/languages.js";
+import { messages } from "../validation/messages.js";
 import { client } from "../redis.js";
 import { SUBMISSION_QUEUE } from "../constants/channels.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -23,17 +25,22 @@ submissionsRouter.post(
   "/",
   validateBody(createSubmissionSchema),
   async (req, res) => {
-    const { solution, language } = req.body;
+    const { solution, languageID } = req.body;
     const userID = req.user.id;
     // placeholder until there is a questions table to pick from
     const questionID = "57d77c90-2d26-4c35-a160-2cfaa1fe7c80";
+
+    const language = await findLanguageByID(languageID);
+    if (!language || !language.is_enabled) {
+      return res.status(400).json({ errors: [messages.languageID.unknown] });
+    }
 
     let submission;
     try {
       submission = await createSubmission({
         code: solution,
         questionID,
-        language,
+        languageID: language.id,
         userID,
       });
     } catch (err) {
@@ -48,7 +55,8 @@ submissionsRouter.post(
         submissionID: submission.id,
         questionID,
         solution,
-        language,
+        // the worker keys its images on the slug, exactly as before
+        language: language.slug,
       }),
     );
 

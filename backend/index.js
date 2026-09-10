@@ -4,6 +4,7 @@ import { connectToDB, closeDB } from "./db/db.js";
 import { client } from "./redis.js";
 import { authRouter } from "./routes/auth.js";
 import { submissionsRouter } from "./routes/submissions.js";
+import { languagesRouter } from "./routes/languages.js";
 import { notFound, errorHandler } from "./middleware/errors.js";
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(express.json({ limit: "1mb" }));
 
 app.use("/auth", authRouter);
 app.use("/submissions", submissionsRouter);
+app.use("/languages", languagesRouter);
 
 // order matters: unknown route first, then the catch-all error handler last
 app.use(notFound);

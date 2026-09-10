@@ -1,4 +1,3 @@
-import { Language } from "../models/language.js";
 import {
   MAX_SOLUTION_LENGTH,
   MIN_PASSWORD_LENGTH,
@@ -13,9 +12,10 @@ export const messages = {
     blank: "solution cannot be blank",
     max: `solution cannot exceed ${MAX_SOLUTION_LENGTH} characters`,
   },
-  language: {
-    required: "language is required",
-    oneOf: `language must be one of: ${Object.keys(Language).join(", ")}`,
+  languageID: {
+    required: "language id is required",
+    uuid: "language id must be a valid uuid",
+    unknown: "unknown or unsupported language",
   },
   submissionID: {
     required: "submission id is required",
