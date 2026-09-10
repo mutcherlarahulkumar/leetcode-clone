@@ -44,6 +44,28 @@ export const findReferenceSolution = async (questionID) => {
   return rows[0] ?? null;
 };
 
+export const deleteSolution = async ({ questionID, id }) => {
+  const { rows } = await pool.query(
+    "DELETE FROM solutions WHERE id = $1 AND question_id = $2 RETURNING id",
+    [id, questionID],
+  );
+  return rows[0] ?? null;
+};
+
+// Throws 23505 if is_reference is set true while another reference exists; the
+// route maps that to 409.
+export const updateSolution = async ({ questionID, id, code, isReference }) => {
+  const { rows } = await pool.query(
+    `UPDATE solutions
+        SET code = COALESCE($3, code),
+            is_reference = COALESCE($4, is_reference)
+      WHERE id = $1 AND question_id = $2
+      RETURNING id, language_id, is_reference, status, created_at`,
+    [id, questionID, code ?? null, isReference ?? null],
+  );
+  return rows[0] ?? null;
+};
+
 export const setSolutionResult = async ({ id, status, metrics }) => {
   const { rows } = await pool.query(
     "UPDATE solutions SET status = $2, metrics = $3 WHERE id = $1 RETURNING id, status",

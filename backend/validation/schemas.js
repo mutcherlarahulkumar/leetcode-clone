@@ -157,6 +157,11 @@ export const createSolutionSchema = yup.object({
   isReference: yup.boolean().default(false),
 });
 
+export const updateSolutionSchema = yup.object({
+  code: sourceCode(messages.code),
+  isReference: yup.boolean(),
+});
+
 // --- admin: question templates (stub + harness per language) ---
 
 export const templateSchema = yup.object({
@@ -222,6 +227,11 @@ export const testCaseParamSchema = yup.object({
 export const templateParamSchema = yup.object({
   id: yup.string().uuid("id must be a valid uuid").required(),
   languageId: yup.string().uuid("language id must be a valid uuid").required(),
+});
+
+export const solutionParamSchema = yup.object({
+  id: yup.string().uuid("id must be a valid uuid").required(),
+  solutionId: yup.string().uuid("solution id must be a valid uuid").required(),
 });
 
 // yup throws on the first failure unless abortEarly is off; we want every error.

@@ -22,3 +22,30 @@ export const useCreateSolution = (questionId: string) => {
     onSuccess: () => qc.invalidateQueries({ queryKey: adminQuestionKey(questionId) }),
   });
 };
+
+export const useUpdateSolution = (questionId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      solutionId,
+      ...input
+    }: { solutionId: string; code: string; isReference?: boolean }) => {
+      const { data } = await http.patch<AdminSolution>(
+        `/admin/questions/${questionId}/solutions/${solutionId}`,
+        input,
+      );
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminQuestionKey(questionId) }),
+  });
+};
+
+export const useDeleteSolution = (questionId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (solutionId: string) => {
+      await http.delete(`/admin/questions/${questionId}/solutions/${solutionId}`);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminQuestionKey(questionId) }),
+  });
+};

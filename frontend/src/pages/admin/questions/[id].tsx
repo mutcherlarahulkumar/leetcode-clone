@@ -146,7 +146,7 @@ export default function EditQuestionPage() {
       {/* Step 4 — solutions */}
       {step === 3 && (
         <>
-          <SolutionsSection questionId={id} solutions={q.solutions} editable />
+          <SolutionsSection questionId={id} solutions={q.solutions} templates={q.templates} />
           <StepNav onBack={() => setStep(2)} onNext={() => setStep(4)} />
         </>
       )}

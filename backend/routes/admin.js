@@ -6,12 +6,14 @@ import {
   updateQuestionSchema,
   createTestCaseSchema,
   createSolutionSchema,
+  updateSolutionSchema,
   createLanguageSchema,
   updateLanguageSchema,
   templateSchema,
   idParamSchema,
   testCaseParamSchema,
   templateParamSchema,
+  solutionParamSchema,
 } from "../validation/schemas.js";
 import {
   upsertTemplate,
@@ -42,6 +44,8 @@ import {
   createSolution,
   listSolutions,
   findReferenceSolution,
+  deleteSolution,
+  updateSolution,
 } from "../repositories/solutions.js";
 import { listUsers } from "../repositories/users.js";
 import { listAllSubmissions } from "../repositories/submissions.js";
@@ -357,6 +361,58 @@ adminRouter.post(
     } catch (err) {
       console.error(err);
       res.status(500).json({ errors: ["could not create solution"] });
+    }
+  },
+);
+
+adminRouter.patch(
+  "/questions/:id/solutions/:solutionId",
+  validateParams(solutionParamSchema),
+  validateBody(updateSolutionSchema),
+  async (req, res) => {
+    const { code, isReference } = req.body;
+    try {
+      const question = await findQuestionByID(req.params.id);
+      if (!question)
+        return res.status(404).json({ errors: ["question not found"] });
+      const updated = await updateSolution({
+        questionID: question.id,
+        id: req.params.solutionId,
+        code,
+        isReference,
+      });
+      if (!updated)
+        return res.status(404).json({ errors: ["solution not found"] });
+      await revertToDraft(question);
+      res.status(200).json(updated);
+    } catch (err) {
+      if (err.code === "23505")
+        return res.status(409).json({ errors: ["a reference solution already exists"] });
+      console.error(err);
+      res.status(500).json({ errors: ["could not update solution"] });
+    }
+  },
+);
+
+adminRouter.delete(
+  "/questions/:id/solutions/:solutionId",
+  validateParams(solutionParamSchema),
+  async (req, res) => {
+    try {
+      const question = await findQuestionByID(req.params.id);
+      if (!question)
+        return res.status(404).json({ errors: ["question not found"] });
+      const deleted = await deleteSolution({
+        questionID: question.id,
+        id: req.params.solutionId,
+      });
+      if (!deleted)
+        return res.status(404).json({ errors: ["solution not found"] });
+      await revertToDraft(question);
+      res.status(204).end();
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ errors: ["could not delete solution"] });
     }
   },
 );
