@@ -1,3 +1,4 @@
+import { ensureImages } from "./executor/images.js";
 import { consumeSubmissions } from "./events/consumer.js";
 import { publishResult } from "./events/publisher.js";
 import { runInSandbox } from "./executor/index.js";
@@ -24,5 +25,9 @@ const handleSubmission = async ({ submissionID, solution, language }) => {
     });
   }
 };
+
+// Before the queue, not lazily on first use: a broken docker setup should stop
+// the worker starting, not quietly fail one submitter's run.
+await ensureImages();
 
 await consumeSubmissions(handleSubmission);
