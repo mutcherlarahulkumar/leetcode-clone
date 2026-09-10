@@ -30,7 +30,10 @@ http.interceptors.request.use((config) => {
 });
 
 // Turn the backend's { errors: string[] } into a single readable message.
-export const errorMessage = (err: unknown, fallback = "Something went wrong") => {
+export const errorMessage = (
+  err: unknown,
+  fallback = "Something went wrong",
+) => {
   if (err instanceof AxiosError) {
     const data = err.response?.data as ApiError | undefined;
     if (data?.errors?.length) return data.errors.join(", ");
