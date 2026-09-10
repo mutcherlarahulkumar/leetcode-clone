@@ -1,7 +1,21 @@
 CREATE TYPE submission_status AS ENUM (
+    -- the row exists but nothing has been queued for it yet
     'not_applicable',
+    -- queued, the code has not been run yet
     'pending',
+    -- ran and matched the expected output on every test case
     'accepted',
+    -- ran to completion but the output differed on at least one test case
+    'wrong_answer',
+    -- the code never built
+    'compile_error',
+    -- built, but crashed or exited non-zero while running
+    'runtime_error',
+    -- exceeded the wall clock limit and was killed
+    'timeout',
+    -- exceeded the memory limit and was killed
+    'memory_exceeded',
+    -- our failure, not the submitter's: the sandbox or the infrastructure broke
     'error'
 );
 
@@ -19,7 +33,7 @@ CREATE TABLE users (
 CREATE TABLE submissions (
     id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     code        text NOT NULL,
-    status      submission_status NOT NULL,
+    status      submission_status NOT NULL DEFAULT 'not_applicable',
     question_id uuid,
     language    language,
     output      text,
