@@ -40,7 +40,7 @@ authRouter.post("/login", validateBody(loginSchema), async (req, res) => {
     }
 
     res.status(200).json({
-      user: { id: user.id, name: user.name, email: user.email },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
       token: signToken(user),
     });
   } catch (err) {

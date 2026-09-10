@@ -4,6 +4,8 @@ import {
   findSubmissionByID,
 } from "../repositories/submissions.js";
 import { findLanguageByID } from "../repositories/languages.js";
+import { findQuestionByID } from "../repositories/questions.js";
+import { QuestionStatus } from "../models/questionStatus.js";
 import { messages } from "../validation/messages.js";
 import { client } from "../redis.js";
 import { SUBMISSION_QUEUE } from "../constants/channels.js";
@@ -25,10 +27,17 @@ submissionsRouter.post(
   "/",
   validateBody(createSubmissionSchema),
   async (req, res) => {
-    const { solution, languageID } = req.body;
+    const { solution, languageID, questionID } = req.body;
     const userID = req.user.id;
-    // placeholder until there is a questions table to pick from
-    const questionID = "57d77c90-2d26-4c35-a160-2cfaa1fe7c80";
+
+    const question = await findQuestionByID(questionID);
+    if (!question) {
+      return res.status(404).json({ errors: [messages.questionID.unknown] });
+    }
+    // only a live question accepts submissions; a draft has no expected outputs
+    if (question.status !== QuestionStatus.ready) {
+      return res.status(409).json({ errors: [messages.questionID.notReady] });
+    }
 
     const language = await findLanguageByID(languageID);
     if (!language || !language.is_enabled) {
