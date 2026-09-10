@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import Head from "next/head";
 import { useRouter } from "next/router";
 import type { ImperativePanelGroupHandle } from "react-resizable-panels";
 import { toast } from "sonner";
@@ -145,6 +146,9 @@ export default function SolvePage() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
+      <Head>
+        <title>{question.data ? `${question.data.title} · lecode` : "lecode"}</title>
+      </Head>
       <Navbar />
       <div className="min-h-0 flex-1">
         <ResizablePanelGroup ref={outerPanels} direction="horizontal">

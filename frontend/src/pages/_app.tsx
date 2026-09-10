@@ -1,4 +1,5 @@
 import { useState, type ReactElement, type ReactNode } from "react";
+import Head from "next/head";
 import type { NextPage } from "next";
 import type { AppProps } from "next/app";
 import { Inter, JetBrains_Mono } from "next/font/google";
@@ -32,6 +33,13 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <Head>
+        {/* default tab title + icon; a page can override the title with its own <Head> */}
+        <title>lecode</title>
+        <meta name="description" content="Practice data structures and algorithms in the browser." />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+      </Head>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <AuthProvider>
           <div className={cn(sans.variable, mono.variable, "font-sans antialiased")}>
