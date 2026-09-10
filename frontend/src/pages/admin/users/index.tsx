@@ -3,7 +3,7 @@ import { useAdminUsers } from "@lecode/api/admin/users";
 import { withAdminLayout } from "@lecode/lib/layouts/AdminLayout";
 import { Badge } from "@lecode/components/ui/badge";
 import { Card } from "@lecode/components/ui/card";
-import { Skeleton } from "@lecode/components/ui/skeleton";
+import { CsFactLoader } from "@lecode/components/common/CsFactLoader";
 import {
   Table,
   TableBody,
@@ -21,11 +21,7 @@ export default function AdminUsersPage() {
       <h1 className="text-2xl font-bold">Users</h1>
       <Card>
         {isLoading ? (
-          <div className="space-y-2 p-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
+          <CsFactLoader />
         ) : isError ? (
           <p className="p-6 text-sm text-destructive">Could not load users.</p>
         ) : (

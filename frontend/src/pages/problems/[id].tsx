@@ -27,6 +27,7 @@ import { StatementView } from "@lecode/components/common/StatementView";
 import { HintsView } from "@lecode/components/common/HintsView";
 import { StatusBadge } from "@lecode/components/common/StatusBadge";
 import { LanguageIcon } from "@lecode/components/common/LanguageIcon";
+import { CsFactLoader } from "@lecode/components/common/CsFactLoader";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -157,10 +158,7 @@ export default function SolvePage() {
               </TabsList>
               <TabsContent value="description" className="min-h-0 flex-1 overflow-auto p-6 pt-0">
                 {question.isLoading ? (
-                  <div className="space-y-3">
-                    <Skeleton className="h-8 w-2/3" />
-                    <Skeleton className="h-40 w-full" />
-                  </div>
+                  <CsFactLoader />
                 ) : question.isError || !question.data ? (
                   <p className="text-sm text-destructive">Problem not found.</p>
                 ) : (
@@ -259,7 +257,7 @@ export default function SolvePage() {
                   </div>
                   {/* actions */}
                   <div className="flex items-center gap-2 border-t p-2">
-                    <Button variant="secondary" size="sm" className="ml-auto" onClick={onRun} disabled={run.isPending}>
+                    <Button variant="info" size="sm" className="ml-auto" onClick={onRun} disabled={run.isPending}>
                       <FiPlay /> {run.isPending ? "Running…" : "Run"}
                     </Button>
                     <Button size="sm" onClick={onSubmit} disabled={create.isPending}>

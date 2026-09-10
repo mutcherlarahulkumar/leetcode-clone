@@ -5,8 +5,8 @@ import { ROUTES } from "@lecode/constants";
 import { withAppLayout } from "@lecode/lib/layouts/AppLayout";
 import { RequireAuth } from "@lecode/components/common/RequireAuth";
 import { StatusBadge } from "@lecode/components/common/StatusBadge";
+import { CsFactLoader } from "@lecode/components/common/CsFactLoader";
 import { Card } from "@lecode/components/ui/card";
-import { Skeleton } from "@lecode/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -24,11 +24,7 @@ function SubmissionsInner() {
       <h1 className="text-2xl font-bold">My submissions</h1>
       <Card>
         {isLoading ? (
-          <div className="space-y-2 p-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
+          <CsFactLoader />
         ) : isError ? (
           <p className="p-6 text-sm text-destructive">Could not load submissions.</p>
         ) : !data || data.length === 0 ? (

@@ -25,7 +25,8 @@
     --ring: 142 71% 45%;
     --success: 142 71% 40%;
     --warning: 38 92% 50%;
-    --radius: 0.5rem;
+    --info: 217 91% 55%;
+    --radius: 0.7rem;
   }
 
   .dark {
@@ -51,6 +52,7 @@
     --ring: 142 64% 45%;
     --success: 142 64% 48%;
     --warning: 38 92% 55%;
+    --info: 217 91% 62%;
   }
 }
 
@@ -61,6 +63,18 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  /* smoother interactions across the app */
+  button,
+  a,
+  [role="tab"],
+  [data-state] {
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease,
+      opacity 0.15s ease,
+      box-shadow 0.15s ease;
   }
   ::selection {
     background: hsl(var(--primary) / 0.25);

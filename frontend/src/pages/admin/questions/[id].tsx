@@ -24,11 +24,12 @@ import { Stepper } from "@lecode/components/admin/Stepper";
 import { TestCasesSection } from "@lecode/components/admin/TestCasesSection";
 import { TemplatesSection } from "@lecode/components/admin/TemplatesSection";
 import { SolutionsSection } from "@lecode/components/admin/SolutionsSection";
+import { QuestionStatsSection } from "@lecode/components/admin/QuestionStatsSection";
 import { FormField } from "@lecode/components/common/FormField";
 import { MarkdownField } from "@lecode/components/common/MarkdownField";
 import { FormTextArea } from "@lecode/components/common/FormTextArea";
+import { CsFactLoader } from "@lecode/components/common/CsFactLoader";
 import { Button } from "@lecode/components/ui/button";
-import { Skeleton } from "@lecode/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@lecode/components/ui/card";
 
 const STEPS = [
@@ -37,6 +38,7 @@ const STEPS = [
   { key: "templates", label: "Templates" },
   { key: "solutions", label: "Solutions" },
   { key: "publish", label: "Publish" },
+  { key: "stats", label: "Stats" },
 ];
 
 export default function EditQuestionPage() {
@@ -57,14 +59,7 @@ export default function EditQuestionPage() {
     return () => clearInterval(t);
   }, [generating, refetch]);
 
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-48 w-full" />
-      </div>
-    );
-  }
+  if (isLoading) return <CsFactLoader />;
   if (isError || !q || !id) {
     return <p className="text-sm text-destructive">Question not found.</p>;
   }
@@ -224,6 +219,9 @@ export default function EditQuestionPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Step 6 — everyone's submissions on this question */}
+      {step === 5 && <QuestionStatsSection questionId={id} />}
     </div>
   );
 }

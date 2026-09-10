@@ -5,7 +5,7 @@ import { useQuestions } from "@lecode/api/questions";
 import { ROUTES } from "@lecode/constants";
 import { withAppLayout } from "@lecode/lib/layouts/AppLayout";
 import { Card } from "@lecode/components/ui/card";
-import { Skeleton } from "@lecode/components/ui/skeleton";
+import { CsFactLoader } from "@lecode/components/common/CsFactLoader";
 
 export default function ProblemsPage() {
   const { data, isLoading, isError } = useQuestions();
@@ -27,11 +27,9 @@ export default function ProblemsPage() {
       </header>
 
       {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 w-full" />
-          ))}
-        </div>
+        <Card>
+          <CsFactLoader />
+        </Card>
       ) : isError ? (
         <p className="text-sm text-destructive">Could not load problems. Try again.</p>
       ) : !data || data.length === 0 ? (
